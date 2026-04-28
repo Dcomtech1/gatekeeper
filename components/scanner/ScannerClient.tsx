@@ -41,10 +41,20 @@ export default function ScannerClient({
   const resultTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   async function processScan(invitationId: string) {
-    // Prevent double-scanning same code within 1 second
+    // Prevent double-scanning same code within 5 seconds
     if (invitationId === lastScannedRef.current) return
     lastScannedRef.current = invitationId
-    setTimeout(() => { lastScannedRef.current = '' }, 1000)
+    setTimeout(() => { lastScannedRef.current = '' }, 5000)
+
+    // IMMEDIATELY stop and clear the scanner to prevent ghost scans
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.clear()
+        scannerRef.current = null
+      } catch (err) {
+        console.error('Error clearing scanner:', err)
+      }
+    }
 
     setProcessing(true)
     setScanning(false)
@@ -143,13 +153,16 @@ export default function ScannerClient({
 
     const scanner = new Html5QrcodeScanner(
       'qr-reader',
-      { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 },
-      false
+      { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1, rememberLastUsedCamera: true },
+      /* verbose= */ false
     )
 
     scanner.render(
       (decodedText: string) => {
-        processScan(decodedText.trim())
+        // Only process if we are actually in scanning mode
+        if (scannerRef.current) {
+          processScan(decodedText.trim())
+        }
       },
       () => {} // ignore errors during scanning
     )
