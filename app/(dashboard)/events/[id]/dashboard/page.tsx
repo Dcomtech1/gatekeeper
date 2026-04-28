@@ -40,21 +40,42 @@ export default function LiveDashboardPage() {
     // Entry logs
     const { data: logs } = await supabase
       .from('entry_logs')
-      .select('id, scanned_at, invitation:invitations(party_size, seat_info, guest:guests(name))')
+      .select('id, scanned_at, invitation:invitations(id, party_size, seat_info, guest:guests(name))')
       .in('invitation_id', (invitations ?? []).map(i => i.id))
       .order('scanned_at', { ascending: false })
 
-    const loggedIds = new Set((logs ?? []).map((l: any) => l.invitation?.id ?? ''))
+    const logsArr = logs ?? []
+    const invArr = invitations ?? []
 
-    setTotalInvited((invitations ?? []).length)
-    setTotalSeats((invitations ?? []).reduce((a, i) => a + (i.party_size ?? 1), 0))
-    setArrived((logs ?? []).length)
-    setArrivedSeats((logs ?? []).reduce((a: number, l: any) => a + (l.invitation?.party_size ?? 1), 0))
-    setEntries((logs ?? []) as unknown as EntryWithGuest[])
+    // Calculate logs per invitation
+    const logsPerInv = new Map<string, number>()
+    logsArr.forEach((l: any) => {
+      const id = l.invitation?.id
+      if (id) logsPerInv.set(id, (logsPerInv.get(id) ?? 0) + 1)
+    })
+
+    const totalSeatsCount = invArr.reduce((a, i) => a + (i.party_size ?? 1), 0)
+    const totalEntriesCount = logsArr.length
+
+    setTotalInvited(invArr.length)
+    setTotalSeats(totalSeatsCount)
+    setArrived(totalEntriesCount) // Total People In
+    setArrivedSeats(logsPerInv.size) // Total Parties/Groups that have at least one person in
+    setEntries(logsArr as unknown as EntryWithGuest[])
+    
     setPending(
-      (invitations ?? [])
-        .filter(i => !loggedIds.has(i.id))
-        .map(i => ({ name: (i.guest as any)?.name ?? '', party_size: i.party_size, seat_info: i.seat_info }))
+      invArr
+        .map(i => {
+          const arrivedInParty = logsPerInv.get(i.id) ?? 0
+          const remainingInParty = (i.party_size ?? 1) - arrivedInParty
+          return { ...i, remainingInParty }
+        })
+        .filter(i => i.remainingInParty > 0)
+        .map(i => ({ 
+          name: (i.guest as any)?.name ?? '', 
+          party_size: i.remainingInParty, 
+          seat_info: i.seat_info 
+        }))
     )
   }
 
@@ -71,8 +92,7 @@ export default function LiveDashboardPage() {
     return () => { supabase.removeChannel(channel) }
   }, [eventId])
 
-  const arrivalRate = totalInvited > 0 ? Math.round((arrived / totalInvited) * 100) : 0
-  const seatRate = totalSeats > 0 ? Math.round((arrivedSeats / totalSeats) * 100) : 0
+  const arrivalRate = totalSeats > 0 ? Math.round((arrived / totalSeats) * 100) : 0
 
   return (
     <div className="space-y-6">
@@ -83,17 +103,17 @@ export default function LiveDashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard icon={<Users className="h-5 w-5 text-indigo-500" />} label="Invited" value={totalInvited} sub={`${totalSeats} total seats`} />
-        <StatCard icon={<UserCheck className="h-5 w-5 text-green-500" />} label="Arrived" value={arrived} sub={`${arrivedSeats} people in`} />
-        <StatCard icon={<Clock className="h-5 w-5 text-yellow-500" />} label="Pending" value={totalInvited - arrived} sub={`${totalSeats - arrivedSeats} seats empty`} />
-        <StatCard icon={<BarChart3 className="h-5 w-5 text-blue-500" />} label="Arrival Rate" value={`${arrivalRate}%`} sub={`${seatRate}% of seats filled`} />
+        <StatCard icon={<Users className="h-5 w-5 text-indigo-500" />} label="Total Seats" value={totalSeats} sub={`${totalInvited} invitations`} />
+        <StatCard icon={<UserCheck className="h-5 w-5 text-green-500" />} label="People In" value={arrived} sub={`${arrivedSeats} groups arrived`} />
+        <StatCard icon={<Clock className="h-5 w-5 text-yellow-500" />} label="Pending" value={totalSeats - arrived} sub={`${totalInvited - arrivedSeats} groups empty`} />
+        <StatCard icon={<BarChart3 className="h-5 w-5 text-blue-500" />} label="Arrival Rate" value={`${arrivalRate}%`} sub="of total seats filled" />
       </div>
 
       {/* Progress bar */}
       <div>
         <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>Arrivals</span>
-          <span>{arrived} / {totalInvited}</span>
+          <span>Overall Attendance</span>
+          <span>{arrived} / {totalSeats} people</span>
         </div>
         <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
           <div
@@ -121,7 +141,7 @@ export default function LiveDashboardPage() {
                     </p>
                   </div>
                   <Badge variant="secondary" className="text-xs shrink-0">
-                    +{entry.invitation?.party_size}
+                    {entry.invitation?.party_size > 1 ? `Part of ${entry.invitation.party_size}` : 'Individual'}
                   </Badge>
                 </div>
               ))}

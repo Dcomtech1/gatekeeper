@@ -5,9 +5,17 @@ import { CheckCircle, XCircle, AlertCircle, Camera, RefreshCw } from 'lucide-rea
 import { Button } from '@/components/ui/button'
 
 type ScanResult =
-  | { status: 'success'; guestName: string; partySize: number; seatInfo: string | null }
+  | { status: 'success'; guestName: string; partySize: number; enteredCount: number; admittedNow: number; seatInfo: string | null }
   | { status: 'duplicate'; guestName: string; partySize: number; seatInfo: string | null; enteredAt: string }
   | { status: 'error'; message: string }
+
+type PendingSelection = {
+  invitationId: string
+  guestName: string
+  partySize: number
+  remaining: number
+  seatInfo: string | null
+}
 
 export default function ScannerClient({
   token,
@@ -24,6 +32,8 @@ export default function ScannerClient({
 }) {
   const [scanning, setScanning] = useState(false)
   const [result, setResult] = useState<ScanResult | null>(null)
+  const [pendingSelection, setPendingSelection] = useState<PendingSelection | null>(null)
+  const [selectedCount, setSelectedCount] = useState(1)
   const [processing, setProcessing] = useState(false)
   const scannerRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -31,19 +41,20 @@ export default function ScannerClient({
   const resultTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   async function processScan(invitationId: string) {
-    // Prevent double-scanning same code within 3 seconds
+    // Prevent double-scanning same code within 1 second
     if (invitationId === lastScannedRef.current) return
     lastScannedRef.current = invitationId
-    setTimeout(() => { lastScannedRef.current = '' }, 3000)
+    setTimeout(() => { lastScannedRef.current = '' }, 1000)
 
     setProcessing(true)
     setScanning(false)
 
     try {
+      // Step 1: Check the invitation status first
       const res = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invitationId, scannerToken: token }),
+        body: JSON.stringify({ invitationId, scannerToken: token, checkOnly: true }),
       })
 
       const data = await res.json()
@@ -57,12 +68,20 @@ export default function ScannerClient({
           enteredAt: data.enteredAt,
         })
       } else if (res.ok) {
-        setResult({
-          status: 'success',
-          guestName: data.guest?.name ?? 'Unknown',
-          partySize: data.partySize,
-          seatInfo: data.seatInfo,
-        })
+        // If it's a party > 1 and there's more than 1 person remaining, ask for count
+        if (data.partySize > 1 && data.remaining > 1) {
+          setPendingSelection({
+            invitationId,
+            guestName: data.guest?.name ?? 'Unknown',
+            partySize: data.partySize,
+            remaining: data.remaining,
+            seatInfo: data.seatInfo,
+          })
+          setSelectedCount(data.remaining) // Default to all remaining
+        } else {
+          // Auto-admit if only 1 person left
+          await confirmAdmission(invitationId, 1)
+        }
       } else {
         setResult({ status: 'error', message: data.error ?? 'Something went wrong' })
       }
@@ -71,13 +90,44 @@ export default function ScannerClient({
     }
 
     setProcessing(false)
+  }
 
-    // Auto-reset after 4 seconds
-    clearTimeout(resultTimeoutRef.current)
-    resultTimeoutRef.current = setTimeout(() => {
-      setResult(null)
-      setScanning(true)
-    }, 4000)
+  async function confirmAdmission(invitationId: string, count: number) {
+    setProcessing(true)
+    setPendingSelection(null)
+
+    try {
+      const res = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invitationId, scannerToken: token, count }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        setResult({
+          status: 'success',
+          guestName: data.guest?.name ?? 'Unknown',
+          partySize: data.partySize,
+          enteredCount: data.enteredCount,
+          admittedNow: data.admittedNow,
+          seatInfo: data.seatInfo,
+        })
+
+        // Auto-reset after 4 seconds
+        clearTimeout(resultTimeoutRef.current)
+        resultTimeoutRef.current = setTimeout(() => {
+          setResult(null)
+          setScanning(true)
+        }, 4000)
+      } else {
+        setResult({ status: 'error', message: data.error ?? 'Failed to admit' })
+      }
+    } catch {
+      setResult({ status: 'error', message: 'Network error.' })
+    }
+    setProcessing(false)
   }
 
   async function startScanner() {
@@ -133,7 +183,7 @@ export default function ScannerClient({
       <div className="flex-1 flex flex-col items-center justify-center p-4">
 
         {/* Idle state */}
-        {!scanning && !result && !processing && (
+        {!scanning && !result && !processing && !pendingSelection && (
           <div className="text-center">
             <Camera className="h-16 w-16 text-gray-600 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Ready to Scan</h2>
@@ -149,7 +199,7 @@ export default function ScannerClient({
         {processing && (
           <div className="text-center">
             <RefreshCw className="h-16 w-16 text-indigo-400 mx-auto mb-4 animate-spin" />
-            <p className="text-lg font-medium">Checking...</p>
+            <p className="text-lg font-medium">Processing...</p>
           </div>
         )}
 
@@ -168,6 +218,52 @@ export default function ScannerClient({
           </div>
         )}
 
+        {/* Quantity Selection */}
+        {pendingSelection && !processing && (
+          <div className="w-full max-w-sm text-center bg-gray-800 border border-gray-700 rounded-2xl p-8">
+            <h2 className="text-sm text-indigo-400 font-bold uppercase tracking-widest mb-1">Group Arrival</h2>
+            <p className="text-2xl font-bold text-white mb-2">{pendingSelection.guestName}</p>
+            <p className="text-gray-400 text-sm mb-6">Party size: {pendingSelection.partySize} · Remaining: {pendingSelection.remaining}</p>
+            
+            <div className="space-y-4">
+              <p className="text-sm font-medium text-gray-300">How many people are entering now?</p>
+              <div className="flex items-center justify-center gap-6 py-2">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-12 w-12 rounded-full border-gray-600 text-xl"
+                  onClick={() => setSelectedCount(Math.max(1, selectedCount - 1))}
+                  disabled={selectedCount <= 1}
+                > - </Button>
+                <span className="text-4xl font-bold w-12">{selectedCount}</span>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-12 w-12 rounded-full border-gray-600 text-xl"
+                  onClick={() => setSelectedCount(Math.min(pendingSelection.remaining, selectedCount + 1))}
+                  disabled={selectedCount >= pendingSelection.remaining}
+                > + </Button>
+              </div>
+              
+              <div className="pt-4 flex flex-col gap-2">
+                <Button 
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white h-14 text-lg font-bold"
+                  onClick={() => confirmAdmission(pendingSelection.invitationId, selectedCount)}
+                >
+                  Confirm Admission
+                </Button>
+                <Button 
+                  variant="ghost"
+                  className="w-full text-gray-500"
+                  onClick={() => { setPendingSelection(null); setScanning(true); }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Result display */}
         {result && (
           <div className="w-full max-w-sm text-center">
@@ -176,11 +272,23 @@ export default function ScannerClient({
                 <CheckCircle className="h-20 w-20 text-green-400 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold text-green-300 mb-1">ENTRY ALLOWED</h2>
                 <p className="text-3xl font-bold text-white mt-3">{result.guestName}</p>
-                <p className="text-green-300 mt-2 text-lg">
-                  Admits <strong>{result.partySize}</strong> {result.partySize === 1 ? 'person' : 'people'}
-                </p>
+                <div className="mt-4 p-3 bg-green-500/20 rounded-xl border border-green-500/30">
+                  <p className="text-green-300 text-lg font-semibold leading-tight">
+                    {result.partySize > 1 ? (
+                      <>
+                        Admitted <span className="text-white text-2xl mx-1">{result.admittedNow}</span> 
+                        {result.admittedNow === 1 ? 'person' : 'people'}
+                        <div className="text-sm font-normal mt-1 text-green-400/70">
+                          ({result.enteredCount} of {result.partySize} total)
+                        </div>
+                      </>
+                    ) : (
+                      <>One person admitted</>
+                    )}
+                  </p>
+                </div>
                 {result.seatInfo && (
-                  <p className="text-sm text-gray-300 mt-2 bg-gray-800/50 px-3 py-1 rounded-full inline-block">{result.seatInfo}</p>
+                  <p className="text-sm text-gray-300 mt-4 bg-gray-800/50 px-3 py-1 rounded-full inline-block">{result.seatInfo}</p>
                 )}
               </div>
             )}
