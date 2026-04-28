@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(request: NextRequest) {
-  const { invitationId, scannerToken } = await request.json()
+  const { invitationId, scannerToken, count, checkOnly } = await request.json()
+  const requestedCount = Math.max(1, Number(count) || 1)
 
   if (!invitationId || !scannerToken) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -46,35 +47,56 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'This invitation has been cancelled' }, { status: 400 })
   }
 
-  // 5. Check if already entered (entry_logs has unique constraint on invitation_id)
-  const { data: existing } = await supabase
+  // 5. Check if the party limit has been reached
+  const { count: existingCount, data: logs } = await supabase
     .from('entry_logs')
-    .select('scanned_at')
+    .select('scanned_at', { count: 'exact' })
     .eq('invitation_id', invitationId)
-    .single()
 
-  if (existing) {
+  const currentCount = existingCount || 0
+  const maxAllowed = (invitation.party_size || 1)
+  
+  if (currentCount >= maxAllowed) {
     return NextResponse.json({
-      error: 'Already entered',
+      error: 'Party full — all members have already entered',
       alreadyEntered: true,
-      enteredAt: existing.scanned_at,
+      enteredAt: logs?.[0]?.scanned_at,
       guest: invitation.guest,
       partySize: invitation.party_size,
       seatInfo: invitation.seat_info,
     }, { status: 409 })
   }
 
-  // 6. Record the entry
-  const { error: logError } = await supabase.from('entry_logs').insert({
+  // Check if requested count exceeds remaining capacity
+  if (currentCount + requestedCount > maxAllowed) {
+    return NextResponse.json({
+      error: `Cannot admit ${requestedCount} people. Only ${maxAllowed - currentCount} seats remaining.`,
+      remaining: maxAllowed - currentCount,
+      guest: invitation.guest,
+      partySize: invitation.party_size,
+    }, { status: 400 })
+  }
+
+  // 6. If checkOnly, just return the data
+  if (checkOnly) {
+    return NextResponse.json({
+      success: true,
+      guest: invitation.guest,
+      partySize: invitation.party_size,
+      remaining: maxAllowed - currentCount,
+      seatInfo: invitation.seat_info,
+    })
+  }
+
+  // 7. Record the entries (one row per person)
+  const entries = Array.from({ length: requestedCount }).map(() => ({
     invitation_id: invitationId,
     scanner_link_id: scannerLink.id,
-  })
+  }))
+
+  const { error: logError } = await supabase.from('entry_logs').insert(entries)
 
   if (logError) {
-    // Unique constraint violation = race condition (scanned twice very quickly)
-    if (logError.code === '23505') {
-      return NextResponse.json({ error: 'Already entered', alreadyEntered: true }, { status: 409 })
-    }
     return NextResponse.json({ error: 'Failed to record entry' }, { status: 500 })
   }
 
@@ -82,6 +104,8 @@ export async function POST(request: NextRequest) {
     success: true,
     guest: invitation.guest,
     partySize: invitation.party_size,
+    enteredCount: currentCount + requestedCount,
+    admittedNow: requestedCount,
     seatInfo: invitation.seat_info,
   })
 }
