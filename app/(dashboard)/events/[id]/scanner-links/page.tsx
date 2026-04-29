@@ -6,12 +6,12 @@ import { Plus, Copy, ToggleLeft, ToggleRight, Trash2, Link2 } from 'lucide-react
 import { createScannerLink, toggleScannerLink, deleteScannerLink } from '@/app/actions/scanner-links'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import type { ScannerLink } from '@/lib/types'
+
+const fieldCls = "w-full bg-background border-2 border-foreground/40 text-foreground font-mono text-sm px-4 py-3 placeholder:text-foreground/40 focus:outline-none focus:border-signal transition-colors"
+const labelCls = "font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/80"
 
 export default function ScannerLinksPage() {
   const { id: eventId } = useParams<{ id: string }>()
@@ -65,63 +65,111 @@ export default function ScannerLinksPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      {/* Section header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 border-b-2 border-foreground/10 pb-6">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Scanner Links</h2>
-          <p className="text-sm text-gray-500">Share these links with ushers — no login needed</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal mb-1">USHER_ACCESS_TOKENS</p>
+          <h2 className="font-display text-4xl uppercase text-foreground leading-none">Scanner Links</h2>
+          <p className="font-mono text-xs text-foreground/40 uppercase tracking-widest mt-2">
+            Share these links with ushers — no login needed
+          </p>
         </div>
+
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" />New Link</Button>
+            <Button variant="signal" className="gap-2 h-12 px-6 text-sm shrink-0">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              NEW_LINK
+            </Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Create Scanner Link</DialogTitle></DialogHeader>
-            <form action={handleCreate} className="space-y-4">
-              <div className="space-y-1">
-                <Label htmlFor="label">Gate / Label</Label>
-                <Input id="label" name="label" placeholder="e.g. Main Entrance, VIP Gate" defaultValue="Main Entrance" />
-                <p className="text-xs text-gray-400">Helps you identify which usher is at which gate</p>
+          <DialogContent className="bg-background border-2 border-foreground/20 max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-display text-3xl uppercase text-foreground">Create Scanner Link</DialogTitle>
+            </DialogHeader>
+            <form action={handleCreate} className="flex flex-col gap-5 mt-2">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="sl-label" className={labelCls}>Gate / Label</label>
+                <input
+                  id="sl-label"
+                  name="label"
+                  placeholder="e.g. Main Entrance, VIP Gate"
+                  defaultValue="Main Entrance"
+                  className={fieldCls}
+                />
+                <p className="font-mono text-[10px] text-foreground/30 uppercase tracking-wide">
+                  Helps identify which usher is at which gate
+                </p>
               </div>
-              <Button type="submit" className="w-full" disabled={isPending}>
-                {isPending ? 'Creating...' : 'Create Link'}
+              <Button type="submit" variant="signal" className="w-full h-12 text-sm" disabled={isPending}>
+                {isPending ? 'CREATING...' : 'CREATE LINK →'}
               </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
+      {/* Empty state */}
       {links.length === 0 ? (
-        <div className="text-center py-20 border-2 border-dashed border-gray-200 rounded-xl">
-          <Link2 className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No scanner links yet</p>
-          <p className="text-gray-400 text-sm mt-1">Create a scanner link and share it with your ushers on event day</p>
+        <div className="py-20 border-2 border-dashed border-foreground/20 flex flex-col items-center justify-center text-center">
+          <Link2 className="h-10 w-10 text-foreground/20 mb-4" aria-hidden="true" />
+          <p className="font-display text-2xl uppercase text-foreground/50 mb-1">NO_LINKS_YET</p>
+          <p className="font-mono text-xs text-foreground/50 uppercase tracking-widest">
+            Create a scanner link and share it with your ushers on event day
+          </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           {links.map((link) => (
-            <div key={link.id} className="border rounded-lg p-4 bg-white flex flex-col sm:flex-row sm:items-center gap-3">
+            <div
+              key={link.id}
+              className="border-2 border-foreground/10 bg-background p-5 flex flex-col sm:flex-row sm:items-center gap-4 hover:border-foreground/20 transition-colors"
+            >
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-gray-900">{link.label}</span>
-                  <Badge variant={link.is_active ? 'default' : 'secondary'} className="text-xs">
-                    {link.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="font-display text-xl uppercase text-foreground">{link.label}</span>
+                  <span
+                    className={`font-mono text-[9px] uppercase tracking-widest px-2 py-1 ${link.is_active ? 'status-admitted' : 'bg-foreground/10 text-foreground/40'}`}
+                    aria-label={`Status: ${link.is_active ? 'Active' : 'Inactive'}`}
+                  >
+                    {link.is_active ? 'ACTIVE' : 'INACTIVE'}
+                  </span>
                 </div>
-                <p className="text-xs text-gray-400 font-mono truncate">{scanUrl(link.token)}</p>
+                <p className="font-mono text-[10px] text-foreground/30 uppercase tracking-wide truncate">
+                  {scanUrl(link.token)}
+                </p>
               </div>
+
               <div className="flex gap-2 shrink-0">
-                <Button variant="outline" size="sm" className="gap-1" onClick={() => copyLink(link.token)}>
-                  <Copy className="h-3.5 w-3.5" />
-                  Copy
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 font-mono text-[10px] uppercase tracking-widest text-foreground/40 hover:text-foreground border border-foreground/10 hover:border-foreground/30 h-9 px-3"
+                  onClick={() => copyLink(link.token)}
+                  aria-label={`Copy link for ${link.label}`}
+                >
+                  <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                  COPY
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => handleToggle(link)} className="gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleToggle(link)}
+                  className="gap-1 font-mono text-[10px] uppercase tracking-widest text-foreground/40 hover:text-foreground border border-foreground/10 hover:border-foreground/30 h-9 px-3"
+                  aria-label={`${link.is_active ? 'Deactivate' : 'Activate'} link ${link.label}`}
+                >
                   {link.is_active
-                    ? <><ToggleRight className="h-4 w-4 text-green-600" />Deactivate</>
-                    : <><ToggleLeft className="h-4 w-4" />Activate</>
+                    ? <><ToggleRight className="h-4 w-4 text-admitted" aria-hidden="true" />DEACTIVATE</>
+                    : <><ToggleLeft className="h-4 w-4" aria-hidden="true" />ACTIVATE</>
                   }
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => handleDelete(link)} className="text-red-500 hover:text-red-600">
-                  <Trash2 className="h-3.5 w-3.5" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(link)}
+                  className="font-mono text-[10px] uppercase tracking-widest text-denied/40 hover:text-denied border border-denied/10 hover:border-denied/30 h-9 px-3"
+                  aria-label={`Delete scanner link ${link.label}`}
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -129,8 +177,14 @@ export default function ScannerLinksPage() {
         </div>
       )}
 
-      <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-700">
-        <strong>How to use:</strong> Copy a link and send it to your usher via WhatsApp or SMS. They open it on their phone browser — no app download, no login required. The link only works for this event.
+      {/* Info panel */}
+      <div className="mt-8 border-l-4 border-signal p-5 bg-signal/5">
+        <p className="font-mono text-xs text-foreground/60 uppercase tracking-wide leading-relaxed">
+          <span className="text-signal font-bold">HOW TO USE:</span>{' '}
+          Copy a link and send it to your usher via WhatsApp or SMS.
+          They open it on their phone browser — no app download, no login required.
+          The link only works for this event.
+        </p>
       </div>
     </div>
   )

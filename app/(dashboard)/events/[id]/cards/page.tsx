@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { Printer, QrCode } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -38,7 +38,7 @@ export default function CardsPage() {
         const qrDataUrl = await QRCode.toDataURL(invitation.id, {
           width: 256,
           margin: 1,
-          color: { dark: '#111827', light: '#ffffff' },
+          color: { dark: '#0A0A0A', light: '#F0EDE8' },
         })
         cardList.push({ guest: g, invitation, qrDataUrl })
       }
@@ -49,33 +49,48 @@ export default function CardsPage() {
     load()
   }, [eventId])
 
-  if (loading) return <div className="text-gray-400 text-sm py-10 text-center">Generating QR codes...</div>
+  if (loading) return (
+    <div className="font-mono text-xs uppercase text-foreground/60 tracking-widest py-12 text-center animate-pulse">
+      GENERATING_QR_CODES...
+    </div>
+  )
 
   if (cards.length === 0) {
     return (
-      <div className="text-center py-20 border-2 border-dashed border-gray-200 rounded-xl">
-        <QrCode className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 font-medium">No guests added yet</p>
-        <p className="text-gray-400 text-sm mt-1">Add guests first, then return here to generate their QR entry cards</p>
+      <div className="py-20 border-2 border-dashed border-foreground/20 flex flex-col items-center justify-center text-center">
+        <QrCode className="h-10 w-10 text-foreground/20 mb-4" aria-hidden="true" />
+        <p className="font-display text-2xl uppercase text-foreground/50 mb-1">NO_GUESTS_ADDED_YET</p>
+        <p className="font-mono text-xs text-foreground/50 uppercase tracking-widest">
+          Add guests first, then return here to generate their QR entry cards
+        </p>
       </div>
     )
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 print:hidden">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 border-b-2 border-foreground/10 pb-6 print:hidden">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Entry Cards</h2>
-          <p className="text-sm text-gray-500">{cards.length} card{cards.length !== 1 ? 's' : ''} ready to print</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal mb-1">ENTRY_CARD_MANIFEST</p>
+          <h2 className="font-display text-4xl uppercase text-foreground leading-none">Entry Cards</h2>
+          <p className="font-mono text-xs text-foreground/70 uppercase tracking-widest mt-2">
+            {cards.length} card{cards.length !== 1 ? 's' : ''} ready to print
+          </p>
         </div>
-        <Button onClick={() => window.print()} className="gap-2">
-          <Printer className="h-4 w-4" />
-          Print All Cards
+        <Button
+          onClick={() => window.print()}
+          variant="signal"
+          className="gap-2 h-12 px-6 text-sm shrink-0"
+          aria-label="Print all entry cards"
+        >
+          <Printer className="h-4 w-4" aria-hidden="true" />
+          PRINT_ALL_CARDS
         </Button>
       </div>
 
-      <p className="text-xs text-gray-400 mb-4 print:hidden">
-        Tip: Use your browser's Print dialog to save as PDF. Set paper size to A4 and enable "Background graphics" for best results.
+      <p className="font-mono text-[10px] text-foreground/60 uppercase tracking-widest mb-6 print:hidden">
+        Tip: Use browser Print dialog → Save as PDF → Enable "Background graphics" for best results.
       </p>
 
       {/* Print grid */}
@@ -91,7 +106,6 @@ export default function CardsPage() {
           />
         ))}
       </div>
-
     </div>
   )
 }
@@ -110,27 +124,40 @@ function EntryCard({
   qrDataUrl: string
 }) {
   return (
-    <div className="border-2 border-gray-800 rounded-xl p-4 flex flex-col items-center text-center bg-white print:break-inside-avoid print:rounded-lg print:border">
+    <div
+      className="border-2 border-foreground/20 bg-background p-5 flex flex-col items-center text-center print:break-inside-avoid"
+      role="article"
+      aria-label={`Entry card for ${guestName}`}
+    >
       {/* Event name */}
-      <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-2">{eventName}</p>
+      <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-foreground/60 mb-3">{eventName}</p>
+
+      {/* Dashed separator */}
+      <div className="w-full border-t border-dashed border-foreground/10 mb-3" aria-hidden="true" />
 
       {/* QR Code */}
-      <img src={qrDataUrl} alt="QR Code" className="w-32 h-32 mb-3" />
+      <img
+        src={qrDataUrl}
+        alt={`QR code for ${guestName}`}
+        className="w-28 h-28 mb-4 border-2 border-foreground/10"
+      />
 
-      {/* Divider */}
-      <div className="w-full border-t border-dashed border-gray-300 mb-3" />
+      {/* Dashed separator */}
+      <div className="w-full border-t border-dashed border-foreground/10 mb-3" aria-hidden="true" />
 
       {/* Guest name */}
-      <p className="text-base font-bold text-gray-900 leading-tight">{guestName}</p>
+      <p className="font-display text-2xl uppercase text-foreground leading-tight">{guestName}</p>
 
       {/* Party size */}
-      <p className="text-xs text-gray-500 mt-1">
-        Admits <span className="font-bold text-indigo-600">{partySize}</span> {partySize === 1 ? 'person' : 'people'}
+      <p className="font-mono text-[10px] uppercase tracking-widest text-foreground/70 mt-2">
+        ADMITS <span className="text-signal font-bold">{partySize}</span> {partySize === 1 ? 'PERSON' : 'PEOPLE'}
       </p>
 
-      {/* Seat */}
+      {/* Seat info */}
       {seatInfo && (
-        <p className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full mt-2 font-medium">{seatInfo}</p>
+        <div className="mt-3 border border-signal/30 px-3 py-1">
+          <p className="font-mono text-[9px] uppercase tracking-widest text-signal">{seatInfo}</p>
+        </div>
       )}
     </div>
   )
