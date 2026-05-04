@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import Link from 'next/link'
-import { Plus, Download, BarChart3, Users, UserCheck, Clock } from 'lucide-react'
+import { Plus, Download, BarChart3, Users, UserCheck, Clock, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { EventCard } from '@/components/event-card'
+import { DeleteEventDialog } from '@/components/delete-event-dialog'
+import { EmptyState } from '@/components/empty-state'
+import { deleteEvent } from '@/app/actions/events'
 import type { Event, Invitation, EntryLog } from '@/lib/types'
 
 interface EventsDashboardClientProps {
@@ -22,6 +25,8 @@ export function EventsDashboardClient({
   const [events, setEvents] = useState<Event[]>(initialEvents)
   const [invitations, setInvitations] = useState<Invitation[]>(initialInvitations)
   const [logs, setLogs] = useState<{ invitation_id: string }[]>(initialLogs)
+  const [deleteTarget, setDeleteTarget] = useState<Event | null>(null)
+  const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
     const supabase = createClient()
@@ -96,34 +101,77 @@ export function EventsDashboardClient({
         </header>
 
         {events.length === 0 ? (
-          <div className="p-12 border-2 border-dashed border-foreground/20 flex flex-col items-center justify-center text-center bg-background">
-            <p className="font-mono text-foreground/60 uppercase mb-6 tracking-widest text-sm">NO_DATA_AVAILABLE</p>
-            <Link href="/events/new">
-              <Button variant="ghost">INITIALIZE_FIRST_EVENT</Button>
-            </Link>
-          </div>
+          <EmptyState
+            title="NO_DATA_AVAILABLE"
+            action={
+              <Link href="/events/new">
+                <Button variant="ghost">INITIALIZE_FIRST_EVENT</Button>
+              </Link>
+            }
+            className="p-12 bg-background"
+          />
         ) : (
+          <>
           <div className="flex flex-col gap-6">
             {events.map((event) => {
               const s = eventStats[event.id] || { checkedIn: 0, totalCapacity: 0 }
               return (
-                <Link key={event.id} href={`/events/${event.id}`}>
-                  <EventCard
-                    name={event.name}
-                    date={new Date(event.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).toUpperCase()}
-                    time={event.time?.slice(0, 5) ?? 'N/A'}
-                    guestCount={s.checkedIn}
-                    capacity={event.capacity || 0}
-                    status={
-                      event.status === 'live'      ? 'LIVE' :
-                      event.status === 'published' ? 'PUBLISHED' :
-                      event.status === 'ended'     ? 'CLOSED' : 'DRAFT'
-                    }
-                  />
-                </Link>
+                <div key={event.id} className="relative group">
+                  <Link href={`/events/${event.id}`}>
+                    <EventCard
+                      name={event.name}
+                      date={new Date(event.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).toUpperCase()}
+                      time={event.time?.slice(0, 5) ?? 'N/A'}
+                      guestCount={s.checkedIn}
+                      capacity={event.capacity || 0}
+                      status={
+                        event.status === 'live'      ? 'LIVE' :
+                        event.status === 'published' ? 'PUBLISHED' :
+                        event.status === 'ended'     ? 'CLOSED' : 'DRAFT'
+                      }
+                    />
+                  </Link>
+                  {/* Delete button — always visible on mobile, hover-reveal on desktop */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setDeleteTarget(event)
+                    }}
+                    title="Delete event"
+                    className="
+                      absolute top-3 right-3 z-10
+                      size-9 flex items-center justify-center
+                      border-2 border-denied text-denied bg-background
+                      hover:bg-denied hover:text-paper
+                      transition-colors duration-150
+                      opacity-100 md:opacity-0 md:group-hover:opacity-100
+                      focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-denied
+                    "
+                  >
+                    <Trash2 className="size-4" />
+                    <span className="sr-only">Delete {event.name}</span>
+                  </button>
+                </div>
               )
             })}
           </div>
+
+          {/* ── Delete Confirmation Dialog ── */}
+          <DeleteEventDialog
+            open={!!deleteTarget}
+            onOpenChange={(open) => !open && setDeleteTarget(null)}
+            eventName={deleteTarget?.name}
+            isPending={isPending}
+            onConfirm={() => {
+              if (!deleteTarget) return
+              startTransition(async () => {
+                await deleteEvent(deleteTarget.id)
+                setDeleteTarget(null)
+              })
+            }}
+          />
+          </>
         )}
       </div>
 

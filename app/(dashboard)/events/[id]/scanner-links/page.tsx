@@ -5,19 +5,22 @@ import { useParams } from 'next/navigation'
 import { Plus, Copy, ToggleLeft, ToggleRight, Trash2, Link2 } from 'lucide-react'
 import { createScannerLink, toggleScannerLink, deleteScannerLink } from '@/app/actions/scanner-links'
 import { createClient } from '@/lib/supabase/client'
+import { fieldCls, labelCls } from '@/lib/form-styles'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import { SectionHeader } from '@/components/section-header'
+import { EmptyState } from '@/components/empty-state'
 import { toast } from 'sonner'
 import type { ScannerLink } from '@/lib/types'
-
-const fieldCls = "w-full bg-background border-2 border-foreground/40 text-foreground font-mono text-sm px-4 py-3 placeholder:text-foreground/40 focus:outline-none focus:border-signal transition-colors"
-const labelCls = "font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/80"
 
 export default function ScannerLinksPage() {
   const { id: eventId } = useParams<{ id: string }>()
   const [links, setLinks] = useState<ScannerLink[]>([])
   const [addOpen, setAddOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<ScannerLink | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isDeleting, startDeleteTransition] = useTransition()
 
   async function loadLinks() {
     const supabase = createClient()
@@ -65,15 +68,6 @@ export default function ScannerLinksPage() {
     })
   }
 
-  async function handleDelete(link: ScannerLink) {
-    if (!confirm(`Delete scanner link "${link.label}"?`)) return
-    startTransition(async () => {
-      const result = await deleteScannerLink(link.id, eventId)
-      if (result?.error) toast.error(result.error)
-      else { toast.success('Link deleted'); loadLinks() }
-    })
-  }
-
   function copyLink(token: string) {
     navigator.clipboard.writeText(scanUrl(token))
     toast.success('Link copied to clipboard')
@@ -81,15 +75,13 @@ export default function ScannerLinksPage() {
 
   return (
     <div>
-      {/* Section header */}
+      {/* Section header + New Link button */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 border-b-2 border-foreground/10 pb-6">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal mb-1">USHER_ACCESS_TOKENS</p>
-          <h2 className="font-display text-4xl uppercase text-foreground leading-none">Scanner Links</h2>
-          <p className="font-mono text-xs text-foreground/40 uppercase tracking-widest mt-2">
-            Share these links with ushers — no login needed
-          </p>
-        </div>
+        <SectionHeader
+          eyebrow="USHER_ACCESS_TOKENS"
+          title="Scanner Links"
+          subtitle="Share these links with ushers — no login needed"
+        />
 
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
@@ -124,15 +116,13 @@ export default function ScannerLinksPage() {
         </Dialog>
       </div>
 
-      {/* Empty state */}
+      {/* Link list */}
       {links.length === 0 ? (
-        <div className="py-20 border-2 border-dashed border-foreground/20 flex flex-col items-center justify-center text-center">
-          <Link2 className="h-10 w-10 text-foreground/20 mb-4" aria-hidden="true" />
-          <p className="font-display text-2xl uppercase text-foreground/50 mb-1">NO_LINKS_YET</p>
-          <p className="font-mono text-xs text-foreground/50 uppercase tracking-widest">
-            Create a scanner link and share it with your ushers on event day
-          </p>
-        </div>
+        <EmptyState
+          icon={<Link2 className="h-10 w-10" />}
+          title="NO_LINKS_YET"
+          subtitle="Create a scanner link and share it with your ushers on event day"
+        />
       ) : (
         <div className="flex flex-col gap-3">
           {links.map((link) => (
@@ -181,7 +171,7 @@ export default function ScannerLinksPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDelete(link)}
+                  onClick={() => setDeleteTarget(link)}
                   className="font-mono text-[10px] uppercase tracking-widest text-denied/40 hover:text-denied border border-denied/10 hover:border-denied/30 h-9 px-3"
                   aria-label={`Delete scanner link ${link.label}`}
                 >
@@ -202,6 +192,27 @@ export default function ScannerLinksPage() {
           The link only works for this event.
         </p>
       </div>
+
+      {/* Delete link confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="DELETE_LINK"
+        description="THIS_ACTION_IS_IRREVERSIBLE"
+        subject={deleteTarget?.label}
+        subjectLabel="TARGET_LINK"
+        body="Deleting this link will immediately revoke usher access. Any usher using this link will be blocked from scanning."
+        confirmLabel="DELETE_LINK"
+        isPending={isDeleting}
+        onConfirm={() => {
+          if (!deleteTarget) return
+          startDeleteTransition(async () => {
+            const result = await deleteScannerLink(deleteTarget.id, eventId)
+            if (result?.error) toast.error(result.error)
+            else { toast.success('Link deleted'); loadLinks(); setDeleteTarget(null) }
+          })
+        }}
+      />
     </div>
   )
 }
