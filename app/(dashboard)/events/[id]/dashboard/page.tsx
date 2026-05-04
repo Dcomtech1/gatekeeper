@@ -25,80 +25,72 @@ export default function LiveDashboardPage() {
   const [entries, setEntries] = useState<EntryWithGuest[]>([])
   const [pending, setPending] = useState<Array<{ name: string; party_size: number; seat_info: string | null }>>([])
 
-  async function loadData() {
+  useEffect(() => {
     const supabase = createClient()
 
-    const { data: invitations } = await supabase
-      .from('invitations')
-      .select('id, party_size, seat_info, status, guest:guests(name)')
-      .eq('event_id', eventId)
-      .eq('status', 'pending')
+    async function loadData() {
+      const { data: invitations } = await supabase
+        .from('invitations')
+        .select('id, party_size, seat_info, status, guest:guests(name)')
+        .eq('event_id', eventId)
 
-    const { data: logs } = await supabase
-      .from('entry_logs')
-      .select('id, scanned_at, invitation:invitations(id, party_size, seat_info, guest:guests(name))')
-      .in('invitation_id', (invitations ?? []).map(i => i.id))
-      .order('scanned_at', { ascending: false })
+      const { data: logs } = await supabase
+        .from('entry_logs')
+        .select('id, scanned_at, invitation:invitations(id, party_size, seat_info, guest:guests(name))')
+        .in('invitation_id', (invitations ?? []).map(i => i.id))
+        .order('scanned_at', { ascending: false })
 
-    const logsArr = (logs ?? []) as any[]
-    const invArr = (invitations ?? []) as any[]
+      const logsArr = (logs ?? []) as any[]
+      const invArr  = (invitations ?? []) as any[]
 
-    const logsPerInv = new Map<string, number>()
-    logsArr.forEach((l) => {
-      const invId = l.invitation?.id
-      if (invId) logsPerInv.set(invId, (logsPerInv.get(invId) ?? 0) + 1)
-    })
+      const logsPerInv = new Map<string, number>()
+      logsArr.forEach((l) => {
+        const invId = l.invitation?.id
+        if (invId) logsPerInv.set(invId, (logsPerInv.get(invId) ?? 0) + 1)
+      })
 
-    const totalSeatsCount = invArr.reduce((a, i) => a + (i.party_size ?? 1), 0)
-    const totalEntriesCount = logsArr.length
+      setTotalInvited(invArr.length)
+      setTotalSeats(invArr.reduce((a: number, i: any) => a + (i.party_size ?? 1), 0))
+      setArrived(logsArr.length)
+      setArrivedSeats(logsPerInv.size)
+      setEntries(logsArr.map(l => ({
+        ...l,
+        invitation: {
+          ...l.invitation,
+          guest: Array.isArray(l.invitation.guest) ? l.invitation.guest[0] : l.invitation.guest
+        }
+      })))
+      setPending(
+        invArr
+          .map((i: any) => {
+            const arrivedInParty  = logsPerInv.get(i.id) ?? 0
+            const remainingInParty = (i.party_size ?? 1) - arrivedInParty
+            return { ...i, remainingInParty }
+          })
+          .filter((i: any) => i.remainingInParty > 0)
+          .map((i: any) => ({
+            name:       (Array.isArray(i.guest) ? i.guest[0] : i.guest)?.name ?? 'Unknown',
+            party_size: i.remainingInParty,
+            seat_info:  i.seat_info
+          }))
+      )
+    }
 
-    setTotalInvited(invArr.length)
-    setTotalSeats(totalSeatsCount)
-    setArrived(totalEntriesCount)
-    setArrivedSeats(logsPerInv.size)
-    setEntries(logsArr.map(l => ({
-      ...l,
-      invitation: {
-        ...l.invitation,
-        guest: Array.isArray(l.invitation.guest) ? l.invitation.guest[0] : l.invitation.guest
-      }
-    })))
-
-    setPending(
-      invArr
-        .map(i => {
-          const arrivedInParty = logsPerInv.get(i.id) ?? 0
-          const remainingInParty = (i.party_size ?? 1) - arrivedInParty
-          return { ...i, remainingInParty }
-        })
-        .filter(i => i.remainingInParty > 0)
-        .map(i => ({
-          name: (Array.isArray(i.guest) ? i.guest[0] : i.guest)?.name ?? 'Unknown',
-          party_size: i.remainingInParty,
-          seat_info: i.seat_info
-        }))
-    )
-  }
-
-  useEffect(() => {
     loadData()
 
-    const supabase = createClient()
+    // Poll every 5s — guarantees updates even without Supabase Realtime
+    const poll = setInterval(loadData, 5000)
+
     const channel = supabase
       .channel(`entry-logs-${eventId}`)
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'entry_logs' 
-      }, () => loadData())
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'invitations'
-      }, () => loadData())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'entry_logs' },  () => loadData())
+      .on('postgres_changes', { event: '*',      schema: 'public', table: 'invitations' }, () => loadData())
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      clearInterval(poll)
+      supabase.removeChannel(channel)
+    }
   }, [eventId])
 
   const arrivalRate = totalSeats > 0 ? Math.round((arrived / totalSeats) * 100) : 0

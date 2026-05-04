@@ -26,7 +26,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'This scanner link has been deactivated' }, { status: 403 })
   }
 
-  // 2. Look up the invitation and guest
+  // 2. Check the event status — scanning only allowed when event is 'live'
+  const { data: eventData, error: eventError } = await supabase
+    .from('events')
+    .select('status')
+    .eq('id', scannerLink.event_id)
+    .single()
+
+  if (eventError || !eventData) {
+    return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+  }
+
+  if (eventData.status === 'ended') {
+    return NextResponse.json({ error: 'This event has ended — scanning is closed' }, { status: 403 })
+  }
+
+  if (eventData.status === 'draft' || eventData.status === 'published') {
+    return NextResponse.json({ error: 'Scanning is not yet open for this event' }, { status: 403 })
+  }
+
+  // 3. Look up the invitation and guest
   const { data: invitation, error: invError } = await supabase
     .from('invitations')
     .select('id, event_id, party_size, seat_info, status, guest:guests(name, phone)')

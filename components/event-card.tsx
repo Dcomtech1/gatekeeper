@@ -6,7 +6,7 @@ interface EventCardProps {
   time: string
   guestCount: number
   capacity: number
-  status: "OPEN" | "CLOSED" | "LIVE"
+  status: "OPEN" | "CLOSED" | "LIVE" | "PUBLISHED" | "DRAFT"
   className?: string
 }
 
@@ -21,10 +21,12 @@ export function EventCard({
 }: EventCardProps) {
   const percentage = Math.min((guestCount / capacity) * 100, 100)
 
-  const statusColors = {
-    OPEN: "bg-signal text-void",
-    CLOSED: "bg-denied text-void",
-    LIVE: "bg-admitted text-void",
+  const statusColors: Record<string, string> = {
+    LIVE:      "bg-admitted text-void",
+    PUBLISHED: "bg-signal text-void",
+    DRAFT:     "bg-foreground/15 text-foreground/60",
+    OPEN:      "bg-signal text-void",
+    CLOSED:    "bg-denied text-void",
   }
 
   return (

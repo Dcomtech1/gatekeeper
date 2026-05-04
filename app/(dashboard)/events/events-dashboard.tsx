@@ -23,35 +23,37 @@ export function EventsDashboardClient({
   const [invitations, setInvitations] = useState<Invitation[]>(initialInvitations)
   const [logs, setLogs] = useState<{ invitation_id: string }[]>(initialLogs)
 
-  const supabase = createClient()
-
-  async function refreshData() {
-    // We only really need to refresh logs and maybe invitations for live updates
-    const { data: newInvitations } = await supabase
-      .from('invitations')
-      .select('id, event_id, party_size, status')
-    
-    const { data: newLogs } = await supabase
-      .from('entry_logs')
-      .select('invitation_id')
-
-    if (newInvitations) setInvitations(newInvitations as Invitation[])
-    if (newLogs) setLogs(newLogs as { invitation_id: string }[])
-  }
-
   useEffect(() => {
-    // Subscribe to entry_logs for real-time updates
+    const supabase = createClient()
+
+    async function refreshData() {
+      const [{ data: newEvents }, { data: newInvitations }, { data: newLogs }] = await Promise.all([
+        supabase.from('events').select('*').order('date', { ascending: false }),
+        supabase.from('invitations').select('id, event_id, party_size, status'),
+        supabase.from('entry_logs').select('invitation_id'),
+      ])
+
+      if (newEvents)      setEvents(newEvents as Event[])
+      if (newInvitations) setInvitations(newInvitations as Invitation[])
+      if (newLogs)        setLogs(newLogs as { invitation_id: string }[])
+    }
+
+    // Initial load
+    refreshData()
+
+    // Polling — guaranteed to work even if Supabase Realtime is not configured
+    const poll = setInterval(refreshData, 8000)
+
+    // Real-time subscriptions — instant updates when Realtime is enabled
     const channel = supabase
       .channel('global-entry-logs')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'entry_logs' }, () => {
-        refreshData()
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'invitations' }, () => {
-        refreshData()
-      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'entry_logs' },   () => refreshData())
+      .on('postgres_changes', { event: '*',      schema: 'public', table: 'invitations' },  () => refreshData())
+      .on('postgres_changes', { event: '*',      schema: 'public', table: 'events' },       () => refreshData())
       .subscribe()
 
     return () => {
+      clearInterval(poll)
       supabase.removeChannel(channel)
     }
   }, [])
@@ -112,7 +114,11 @@ export function EventsDashboardClient({
                     time={event.time?.slice(0, 5) ?? 'N/A'}
                     guestCount={s.checkedIn}
                     capacity={event.capacity || 0}
-                    status={event.status === 'active' ? 'LIVE' : event.status === 'draft' ? 'OPEN' : 'CLOSED'}
+                    status={
+                      event.status === 'live'      ? 'LIVE' :
+                      event.status === 'published' ? 'PUBLISHED' :
+                      event.status === 'ended'     ? 'CLOSED' : 'DRAFT'
+                    }
                   />
                 </Link>
               )

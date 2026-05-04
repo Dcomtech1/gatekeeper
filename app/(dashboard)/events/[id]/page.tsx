@@ -21,7 +21,26 @@ export default function EventOverviewPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.from('events').select('*').eq('id', id).single().then(({ data }) => setEvent(data))
+
+    async function loadEvent() {
+      const { data } = await supabase.from('events').select('*').eq('id', id).single()
+      if (data) setEvent(data)
+    }
+
+    loadEvent()
+
+    // Poll every 10s — guarantees status badge updates without Supabase Realtime
+    const poll = setInterval(loadEvent, 10000)
+
+    const channel = supabase
+      .channel(`event-detail-${id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${id}` }, () => loadEvent())
+      .subscribe()
+
+    return () => {
+      clearInterval(poll)
+      supabase.removeChannel(channel)
+    }
   }, [id])
 
   if (!event) return (
@@ -48,9 +67,10 @@ export default function EventOverviewPage() {
   }
 
   const statusColors: Record<string, string> = {
-    active: 'status-admitted',
-    draft: 'status-pending',
-    ended: 'status-denied',
+    live:      'status-admitted',
+    published: 'status-pending',
+    draft:     'bg-foreground/10 text-foreground/60 px-4 py-1',
+    ended:     'status-denied',
   }
 
   if (editing) {
@@ -102,9 +122,10 @@ export default function EventOverviewPage() {
               defaultValue={event.status}
               className={`${fieldCls} appearance-none cursor-pointer`}
             >
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="ended">Ended</option>
+              <option value="draft">Draft — being set up, scanning closed</option>
+              <option value="published">Published — ready, scanning closed</option>
+              <option value="live">Live — scanning open for ushers</option>
+              <option value="ended">Ended — event over, scanning blocked</option>
             </select>
           </div>
 

@@ -12,9 +12,10 @@ const tabs = [
 ]
 
 const statusMap: Record<string, { label: string; cls: string }> = {
-  active: { label: 'LIVE', cls: 'status-admitted' },
-  draft:  { label: 'DRAFT', cls: 'status-pending' },
-  ended:  { label: 'ENDED', cls: 'status-denied' },
+  live:      { label: 'LIVE',      cls: 'status-admitted' },
+  published: { label: 'PUBLISHED', cls: 'status-pending' },
+  draft:     { label: 'DRAFT',     cls: 'bg-foreground/10 text-foreground/60' },
+  ended:     { label: 'ENDED',     cls: 'status-denied' },
 }
 
 export default async function EventLayout({
@@ -62,9 +63,12 @@ export default async function EventLayout({
         </div>
 
         <div
-          className={`font-display text-xl px-5 py-2 inline-flex items-center justify-center uppercase self-start sm:self-end shrink-0 ${statusInfo.cls}`}
+          className={`font-display text-xl px-5 py-2 inline-flex items-center gap-2 justify-center uppercase self-start sm:self-end shrink-0 ${statusInfo.cls}`}
           aria-label={`Event status: ${statusInfo.label}`}
         >
+          {event.status === 'live' && (
+            <span className="size-2 rounded-full bg-current animate-blink shrink-0" aria-hidden="true" />
+          )}
           {statusInfo.label}
         </div>
       </div>

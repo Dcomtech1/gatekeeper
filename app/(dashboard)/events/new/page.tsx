@@ -38,6 +38,11 @@ export default function NewEventPage() {
       <div className="mb-8">
         <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal mb-2">INITIALIZE_NEW_EVENT</p>
         <h1 className="font-display text-5xl uppercase text-foreground leading-none">Create Event</h1>
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/50 mt-3 leading-relaxed border-l-2 border-signal/40 pl-3">
+          New events start as <span className="text-foreground/80">DRAFT</span>.
+          Set to <span className="text-foreground/80">PUBLISHED</span> when your guest list is ready,
+          then <span className="text-signal">LIVE</span> on event day to open scanning for ushers.
+        </p>
       </div>
 
       <form action={handleSubmit} className="brutalist-card flex flex-col gap-6">

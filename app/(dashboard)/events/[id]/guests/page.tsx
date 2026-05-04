@@ -32,7 +32,25 @@ export default function GuestsPage() {
     setGuests((data as any[])?.map(g => ({ ...g, invitation: g.invitation?.[0] ?? null })) ?? [])
   }
 
-  useEffect(() => { loadGuests() }, [eventId])
+  useEffect(() => {
+    const supabase = createClient()
+
+    loadGuests()
+
+    // Poll every 10s as a reliable fallback
+    const poll = setInterval(loadGuests, 10000)
+
+    const channel = supabase
+      .channel(`guests-${eventId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'guests',      filter: `event_id=eq.${eventId}` }, () => loadGuests())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitations', filter: `event_id=eq.${eventId}` }, () => loadGuests())
+      .subscribe()
+
+    return () => {
+      clearInterval(poll)
+      supabase.removeChannel(channel)
+    }
+  }, [eventId])
 
   async function handleAdd(formData: FormData) {
     startTransition(async () => {

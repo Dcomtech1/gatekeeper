@@ -29,7 +29,23 @@ export default function ScannerLinksPage() {
     setLinks(data ?? [])
   }
 
-  useEffect(() => { loadLinks() }, [eventId])
+  useEffect(() => {
+    loadLinks()
+
+    // Poll every 10s as a reliable fallback
+    const poll = setInterval(loadLinks, 10000)
+
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`scanner-links-${eventId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'scanner_links', filter: `event_id=eq.${eventId}` }, () => loadLinks())
+      .subscribe()
+
+    return () => {
+      clearInterval(poll)
+      supabase.removeChannel(channel)
+    }
+  }, [eventId])
 
   const scanUrl = (token: string) =>
     `${window.location.origin}/scan/${token}`
