@@ -1,15 +1,14 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useTransition } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Pencil, Trash2, Save, X } from 'lucide-react'
 import { updateEvent, deleteEvent } from '@/app/actions/events'
 import { Button } from '@/components/ui/button'
+import { DeleteEventDialog } from '@/components/delete-event-dialog'
 import { createClient } from '@/lib/supabase/client'
+import { fieldCls, labelCls } from '@/lib/form-styles'
 import type { Event } from '@/lib/types'
-
-const fieldCls = "w-full bg-background border-2 border-foreground/40 text-foreground font-mono text-sm px-4 py-3 placeholder:text-foreground/40 focus:outline-none focus:border-signal transition-colors"
-const labelCls = "font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/80"
 
 export default function EventOverviewPage() {
   const { id } = useParams<{ id: string }>()
@@ -18,6 +17,8 @@ export default function EventOverviewPage() {
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const isSubmitting = useRef(false)
 
   useEffect(() => {
@@ -65,9 +66,8 @@ export default function EventOverviewPage() {
     isSubmitting.current = false
   }
 
-  async function handleDelete() {
-    if (!confirm(`Delete "${event!.name}"? This will remove all guests and QR codes. This cannot be undone.`)) return
-    await deleteEvent(id)
+  function handleDelete() {
+    setDeleteOpen(true)
   }
 
   const statusColors: Record<string, string> = {
@@ -209,6 +209,20 @@ export default function EventOverviewPage() {
           {event.description && <Row label="DESCRIPTION" value={event.description} />}
         </dl>
       </div>
+
+      {/* ── Delete Confirmation Dialog ── */}
+      <DeleteEventDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        eventName={event?.name}
+        isPending={isPending}
+        onConfirm={() => {
+          startTransition(async () => {
+            await deleteEvent(id)
+            setDeleteOpen(false)
+          })
+        }}
+      />
     </div>
   )
 }

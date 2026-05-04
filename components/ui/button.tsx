@@ -11,7 +11,7 @@ const buttonVariants = cva(
       variant: {
         primary: "bg-void text-paper border-2 border-paper hover:bg-paper hover:text-ink",
         signal: "bg-void text-signal border-2 border-signal hover:bg-signal hover:text-void",
-        ghost: "bg-transparent border-2 border-ink text-ink hover:bg-ink hover:text-paper",
+        ghost: "bg-transparent border-2 border-ink text-paper hover:bg-ink hover:text-paper",
         danger: "bg-denied text-paper border-2 border-denied hover:bg-void hover:text-denied",
       },
       size: {

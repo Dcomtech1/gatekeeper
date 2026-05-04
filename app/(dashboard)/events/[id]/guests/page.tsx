@@ -2,25 +2,28 @@
 
 import { useState, useEffect, useTransition } from 'react'
 import { useParams } from 'next/navigation'
-import { Plus, Trash2, Pencil, X, Users } from 'lucide-react'
+import { Plus, Pencil, X, Users } from 'lucide-react'
 import { addGuest, updateGuest, deleteGuest } from '@/app/actions/guests'
 import { createClient } from '@/lib/supabase/client'
+import { fieldCls, labelCls } from '@/lib/form-styles'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import { SectionHeader } from '@/components/section-header'
+import { EmptyState } from '@/components/empty-state'
 import { toast } from 'sonner'
 import type { Invitation, Guest } from '@/lib/types'
 
 type GuestWithInvitation = Guest & { invitation: Invitation | null }
-
-const fieldCls = "w-full bg-background border-2 border-foreground/40 text-foreground font-mono text-sm px-4 py-3 placeholder:text-foreground/40 focus:outline-none focus:border-signal transition-colors"
-const labelCls = "font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/80"
 
 export default function GuestsPage() {
   const { id: eventId } = useParams<{ id: string }>()
   const [guests, setGuests] = useState<GuestWithInvitation[]>([])
   const [addOpen, setAddOpen] = useState(false)
   const [editGuest, setEditGuest] = useState<GuestWithInvitation | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<GuestWithInvitation | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isDeleting, startDeleteTransition] = useTransition()
 
   async function loadGuests() {
     const supabase = createClient()
@@ -69,28 +72,17 @@ export default function GuestsPage() {
     })
   }
 
-  async function handleDelete(guestId: string, guestName: string) {
-    if (!confirm(`Remove ${guestName} from the guest list?`)) return
-    startTransition(async () => {
-      const result = await deleteGuest(guestId, eventId)
-      if (result?.error) toast.error(result.error)
-      else { toast.success('Guest removed'); loadGuests() }
-    })
-  }
-
   const totalSeats = guests.reduce((a, g) => a + (g.invitation?.party_size ?? 1), 0)
 
   return (
     <div>
-      {/* Section header */}
+      {/* Section header + Add button */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 border-b-2 border-foreground/10 pb-6">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal mb-1">GUEST_MANIFEST</p>
-          <h2 className="font-display text-4xl uppercase text-foreground leading-none">Guest List</h2>
-          <p className="font-mono text-xs text-foreground/70 uppercase tracking-widest mt-2">
-            {guests.length} guest{guests.length !== 1 ? 's' : ''} · {totalSeats} total seats
-          </p>
-        </div>
+        <SectionHeader
+          eyebrow="GUEST_MANIFEST"
+          title="Guest List"
+          subtitle={`${guests.length} guest${guests.length !== 1 ? 's' : ''} · ${totalSeats} total seats`}
+        />
 
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
@@ -108,15 +100,13 @@ export default function GuestsPage() {
         </Dialog>
       </div>
 
-      {/* Empty state */}
+      {/* Guest list */}
       {guests.length === 0 ? (
-        <div className="py-20 border-2 border-dashed border-foreground/10 flex flex-col items-center justify-center text-center">
-          <Users className="h-10 w-10 text-foreground/10 mb-4" aria-hidden="true" />
-          <p className="font-display text-2xl uppercase text-foreground/20 mb-1">NO_GUESTS_YET</p>
-          <p className="font-mono text-xs text-foreground/20 uppercase tracking-widest">
-            Add guests to generate their QR entry cards
-          </p>
-        </div>
+        <EmptyState
+          icon={<Users className="h-10 w-10" />}
+          title="NO_GUESTS_YET"
+          subtitle="Add guests to generate their QR entry cards"
+        />
       ) : (
         <div className="border-2 border-foreground/10 overflow-hidden">
           {/* Table header */}
@@ -152,10 +142,10 @@ export default function GuestsPage() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-denied/40 hover:text-denied hover:bg-denied/5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => handleDelete(guest.id, guest.name)}
+                  onClick={() => setDeleteTarget(guest)}
                   aria-label={`Remove guest ${guest.name}`}
                 >
-                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -185,6 +175,27 @@ export default function GuestsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Remove Guest confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="REMOVE_GUEST"
+        description="THIS_ACTION_IS_IRREVERSIBLE"
+        subject={deleteTarget?.name}
+        subjectLabel="TARGET_GUEST"
+        body="Removing this guest will delete their invitation and QR code. This cannot be undone."
+        confirmLabel="REMOVE_GUEST"
+        isPending={isDeleting}
+        onConfirm={() => {
+          if (!deleteTarget) return
+          startDeleteTransition(async () => {
+            const result = await deleteGuest(deleteTarget.id, eventId)
+            if (result?.error) toast.error(result.error)
+            else { toast.success('Guest removed'); loadGuests(); setDeleteTarget(null) }
+          })
+        }}
+      />
     </div>
   )
 }

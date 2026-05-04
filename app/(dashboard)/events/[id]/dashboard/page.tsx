@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { Users, UserCheck, Clock, BarChart3 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { StatCard } from '@/components/stat-card'
+import { SectionHeader } from '@/components/section-header'
 import type { EntryLog, Invitation, Guest } from '@/lib/types'
 
 type EntryWithGuest = {
@@ -99,14 +101,12 @@ export default function LiveDashboardPage() {
     <div className="flex flex-col gap-8">
       {/* Section header */}
       <div className="border-b-2 border-foreground/20 pb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="size-2 bg-admitted animate-blink" aria-hidden="true" />
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal">REALTIME_FEED</p>
-        </div>
-        <h2 className="font-display text-4xl uppercase text-foreground leading-none">Live Attendance</h2>
-        <p className="font-mono text-xs text-foreground/70 uppercase tracking-widest mt-2">
-          Updates in real-time as guests arrive
-        </p>
+        <SectionHeader
+          eyebrow="REALTIME_FEED"
+          title="Live Attendance"
+          subtitle="Updates in real-time as guests arrive"
+          live
+        />
       </div>
 
       {/* Stats grid */}
@@ -223,35 +223,6 @@ export default function LiveDashboardPage() {
           )}
         </div>
       </div>
-    </div>
-  )
-}
-
-function StatCard({
-  icon,
-  label,
-  value,
-  sub,
-  accent,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string | number
-  sub: string
-  accent?: 'admitted' | 'signal'
-}) {
-  const valueColor = accent === 'admitted' ? 'text-admitted' : accent === 'signal' ? 'text-signal' : 'text-foreground'
-
-  return (
-    <div className="bg-background p-5 flex flex-col gap-2" role="listitem">
-      <div className="flex items-center gap-2">
-        {icon}
-        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-foreground/70">{label}</span>
-      </div>
-      <p className={`font-display text-4xl leading-none ${valueColor}`} aria-label={`${label}: ${value}`}>
-        {value}
-      </p>
-      <p className="font-mono text-[9px] uppercase tracking-widest text-foreground/40">{sub}</p>
     </div>
   )
 }
