@@ -116,6 +116,10 @@ export async function POST(request: NextRequest) {
   const { error: logError } = await supabase.from('entry_logs').insert(entries)
 
   if (logError) {
+    // Catch the specific exception raised by our PostgreSQL trigger on race conditions
+    if (logError.message?.includes('Party limit reached')) {
+      return NextResponse.json({ error: 'Party full — concurrent scan blocked' }, { status: 409 })
+    }
     return NextResponse.json({ error: 'Failed to record entry' }, { status: 500 })
   }
 

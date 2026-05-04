@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Pencil, Trash2, Save, X } from 'lucide-react'
 import { updateEvent, deleteEvent } from '@/app/actions/events'
@@ -18,6 +18,7 @@ export default function EventOverviewPage() {
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const isSubmitting = useRef(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -50,6 +51,8 @@ export default function EventOverviewPage() {
   )
 
   async function handleUpdate(formData: FormData) {
+    if (isSubmitting.current) return
+    isSubmitting.current = true
     setLoading(true)
     const result = await updateEvent(id, formData)
     if (result?.error) {
@@ -59,6 +62,7 @@ export default function EventOverviewPage() {
       router.refresh()
     }
     setLoading(false)
+    isSubmitting.current = false
   }
 
   async function handleDelete() {
