@@ -130,7 +130,7 @@ export default function GuestsPage() {
           {guests.map((guest) => (
             <div
               key={guest.id}
-              className="grid grid-cols-[1fr_1fr_auto_auto_auto] items-center px-4 py-4 gap-4 border-b border-foreground/5 hover:bg-foreground/[0.02] transition-colors group"
+              className="grid grid-cols-[1fr_1fr_auto_auto_auto] items-center px-4 py-4 gap-4 border-b border-foreground/5 hover:bg-foreground/2 transition-colors group"
             >
               <span className="font-mono text-sm text-foreground font-medium truncate">{guest.name}</span>
               <span className="font-mono text-xs text-foreground/60 truncate">{guest.phone || guest.email || '—'}</span>
