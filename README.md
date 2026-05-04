@@ -133,3 +133,6 @@ See `supabase/migrations/001_initial_schema.sql` for the full schema.
 - Scanner links can be deactivated instantly by the organizer
 - The `SUPABASE_SERVICE_ROLE_KEY` is never exposed to the browser — only used in the `/api/scan` server route
 - Row Level Security (RLS) ensures organizers can only access their own events
+
+
+...

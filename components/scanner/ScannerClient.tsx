@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { CheckCircle, XCircle, AlertCircle, Camera, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 type ScanResult =
   | { status: 'success'; guestName: string; partySize: number; enteredCount: number; admittedNow: number; seatInfo: string | null }
@@ -21,8 +21,6 @@ export default function ScannerClient({
   token,
   gate,
   eventName,
-  eventDate,
-  eventVenue,
 }: {
   token: string
   gate: string
@@ -36,31 +34,22 @@ export default function ScannerClient({
   const [selectedCount, setSelectedCount] = useState(1)
   const [processing, setProcessing] = useState(false)
   const scannerRef = useRef<any>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
   const lastScannedRef = useRef<string>('')
   const resultTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   async function processScan(invitationId: string) {
-    // Prevent double-scanning same code within 5 seconds
     if (invitationId === lastScannedRef.current) return
     lastScannedRef.current = invitationId
-    setTimeout(() => { lastScannedRef.current = '' }, 5000)
+    setTimeout(() => { lastScannedRef.current = '' }, 3000)
 
-    // IMMEDIATELY stop and clear the scanner to prevent ghost scans
     if (scannerRef.current) {
-      try {
-        await scannerRef.current.clear()
-        scannerRef.current = null
-      } catch (err) {
-        console.error('Error clearing scanner:', err)
-      }
+      try { await scannerRef.current.pause(true) } catch (err) { console.error(err) }
     }
 
     setProcessing(true)
-    setScanning(false)
+    setResult(null)
 
     try {
-      // Step 1: Check the invitation status first
       const res = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,8 +66,8 @@ export default function ScannerClient({
           seatInfo: data.seatInfo,
           enteredAt: data.enteredAt,
         })
+        autoReset()
       } else if (res.ok) {
-        // If it's a party > 1 and there's more than 1 person remaining, ask for count
         if (data.partySize > 1 && data.remaining > 1) {
           setPendingSelection({
             invitationId,
@@ -87,16 +76,17 @@ export default function ScannerClient({
             remaining: data.remaining,
             seatInfo: data.seatInfo,
           })
-          setSelectedCount(data.remaining) // Default to all remaining
+          setSelectedCount(data.remaining)
         } else {
-          // Auto-admit if only 1 person left
           await confirmAdmission(invitationId, 1)
         }
       } else {
-        setResult({ status: 'error', message: data.error ?? 'Something went wrong' })
+        setResult({ status: 'error', message: data.error ?? 'INVALID CODE' })
+        autoReset()
       }
     } catch {
-      setResult({ status: 'error', message: 'Network error. Please try again.' })
+      setResult({ status: 'error', message: 'NETWORK FAILURE' })
+      autoReset()
     }
 
     setProcessing(false)
@@ -124,220 +114,163 @@ export default function ScannerClient({
           admittedNow: data.admittedNow,
           seatInfo: data.seatInfo,
         })
-
-        // Auto-reset after 4 seconds
-        clearTimeout(resultTimeoutRef.current)
-        resultTimeoutRef.current = setTimeout(() => {
-          setResult(null)
-          setScanning(true)
-        }, 4000)
       } else {
-        setResult({ status: 'error', message: data.error ?? 'Failed to admit' })
+        setResult({ status: 'error', message: data.error ?? 'ADMISSION FAILED' })
       }
     } catch {
-      setResult({ status: 'error', message: 'Network error.' })
+      setResult({ status: 'error', message: 'CONNECTION LOST' })
     }
+    
     setProcessing(false)
+    autoReset()
+  }
+
+  function autoReset() {
+    clearTimeout(resultTimeoutRef.current)
+    resultTimeoutRef.current = setTimeout(() => {
+      setResult(null)
+      if (scannerRef.current) {
+        try { scannerRef.current.resume() } catch {}
+      }
+    }, 3000)
   }
 
   async function startScanner() {
-    setResult(null)
-    setScanning(true)
-
-    // Dynamically import html5-qrcode to avoid SSR issues
-    const { Html5QrcodeScanner } = await import('html5-qrcode')
-
-    if (scannerRef.current) {
-      try { await scannerRef.current.clear() } catch {}
+    const { Html5Qrcode } = await import('html5-qrcode')
+    const scanner = new Html5Qrcode('qr-reader')
+    
+    try {
+      await scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => processScan(decodedText.trim()),
+        () => {}
+      )
+      scannerRef.current = scanner
+      setScanning(true)
+    } catch (err) {
+      console.error('Scanner start error:', err)
     }
-
-    const scanner = new Html5QrcodeScanner(
-      'qr-reader',
-      { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1, rememberLastUsedCamera: true },
-      /* verbose= */ false
-    )
-
-    scanner.render(
-      (decodedText: string) => {
-        // Only process if we are actually in scanning mode
-        if (scannerRef.current) {
-          processScan(decodedText.trim())
-        }
-      },
-      () => {} // ignore errors during scanning
-    )
-
-    scannerRef.current = scanner
   }
 
   useEffect(() => {
+    startScanner()
     return () => {
       clearTimeout(resultTimeoutRef.current)
       if (scannerRef.current) {
-        try { scannerRef.current.clear() } catch {}
+        try { scannerRef.current.stop() } catch {}
       }
     }
   }, [])
 
-  const formattedDate = eventDate
-    ? new Date(eventDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-    : ''
-
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      {/* Header */}
-      <div className="px-4 py-4 border-b border-gray-800">
-        <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">{gate}</p>
-        <h1 className="text-base font-bold mt-0.5">{eventName}</h1>
-        <p className="text-xs text-gray-500">{formattedDate} · {eventVenue}</p>
-      </div>
+    <div className="fixed inset-0 flex flex-col bg-void text-paper overflow-hidden select-none">
+      {/* Top Bar */}
+      <header className="p-6 pt-10 shrink-0 border-b-2 border-ink">
+        <h1 className="font-display text-4xl tracking-[0.3em] leading-none text-paper uppercase">
+          GATEKEEP
+        </h1>
+        <p className="font-mono text-xs text-paper/40 uppercase mt-2 tracking-widest">
+          {eventName} // {gate}
+        </p>
+      </header>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
-
-        {/* Idle state */}
-        {!scanning && !result && !processing && !pendingSelection && (
-          <div className="text-center">
-            <Camera className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Ready to Scan</h2>
-            <p className="text-gray-400 text-sm mb-8">Tap the button below to activate the camera and start scanning entry cards</p>
-            <Button onClick={startScanner} size="lg" className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8">
-              <Camera className="h-5 w-5" />
-              Start Scanning
-            </Button>
-          </div>
-        )}
-
-        {/* Processing state */}
-        {processing && (
-          <div className="text-center">
-            <RefreshCw className="h-16 w-16 text-indigo-400 mx-auto mb-4 animate-spin" />
-            <p className="text-lg font-medium">Processing...</p>
-          </div>
-        )}
-
-        {/* Scanner view */}
-        {scanning && !processing && (
-          <div className="w-full max-w-sm">
-            <p className="text-center text-sm text-gray-400 mb-4">Hold the QR code in front of your camera</p>
-            <div id="qr-reader" ref={containerRef} className="rounded-xl overflow-hidden" />
-            <Button
-              variant="ghost"
-              className="w-full mt-4 text-gray-500 hover:text-gray-300"
-              onClick={() => { setScanning(false); if (scannerRef.current) { try { scannerRef.current.clear() } catch {} } }}
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
-
-        {/* Quantity Selection */}
-        {pendingSelection && !processing && (
-          <div className="w-full max-w-sm text-center bg-gray-800 border border-gray-700 rounded-2xl p-8">
-            <h2 className="text-sm text-indigo-400 font-bold uppercase tracking-widest mb-1">Group Arrival</h2>
-            <p className="text-2xl font-bold text-white mb-2">{pendingSelection.guestName}</p>
-            <p className="text-gray-400 text-sm mb-6">Party size: {pendingSelection.partySize} · Remaining: {pendingSelection.remaining}</p>
-            
-            <div className="space-y-4">
-              <p className="text-sm font-medium text-gray-300">How many people are entering now?</p>
-              <div className="flex items-center justify-center gap-6 py-2">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="h-12 w-12 rounded-full border-gray-600 text-xl"
-                  onClick={() => setSelectedCount(Math.max(1, selectedCount - 1))}
-                  disabled={selectedCount <= 1}
-                > - </Button>
-                <span className="text-4xl font-bold w-12">{selectedCount}</span>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="h-12 w-12 rounded-full border-gray-600 text-xl"
-                  onClick={() => setSelectedCount(Math.min(pendingSelection.remaining, selectedCount + 1))}
-                  disabled={selectedCount >= pendingSelection.remaining}
-                > + </Button>
-              </div>
-              
-              <div className="pt-4 flex flex-col gap-2">
-                <Button 
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white h-14 text-lg font-bold"
-                  onClick={() => confirmAdmission(pendingSelection.invitationId, selectedCount)}
-                >
-                  Confirm Admission
-                </Button>
-                <Button 
-                  variant="ghost"
-                  className="w-full text-gray-500"
-                  onClick={() => { setPendingSelection(null); setScanning(true); }}
-                >
-                  Cancel
-                </Button>
-              </div>
+      {/* Camera Viewport */}
+      <main className="flex-1 relative flex items-center justify-center bg-void">
+        <div className="relative w-72 h-72">
+          {/* Brutalist Corner Brackets */}
+          <div className="absolute -top-1 -left-1 w-6 h-6 border-t-[3px] border-l-[3px] border-signal z-20" />
+          <div className="absolute -top-1 -right-1 w-6 h-6 border-t-[3px] border-r-[3px] border-signal z-20" />
+          <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-[3px] border-l-[3px] border-signal z-20" />
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-[3px] border-r-[3px] border-signal z-20" />
+          
+          {/* QR Reader Surface */}
+          <div id="qr-reader" className="w-full h-full overflow-hidden grayscale contrast-125 opacity-60" />
+          
+          {!scanning && !processing && (
+            <div className="absolute inset-0 flex items-center justify-center bg-void/80 z-10">
+              <Button variant="signal" onClick={startScanner}>INITIALIZE CAMERA</Button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      </main>
 
-        {/* Result display */}
-        {result && (
-          <div className="w-full max-w-sm text-center">
-            {result.status === 'success' && (
-              <div className="bg-green-900/50 border border-green-500 rounded-2xl p-8">
-                <CheckCircle className="h-20 w-20 text-green-400 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-green-300 mb-1">ENTRY ALLOWED</h2>
-                <p className="text-3xl font-bold text-white mt-3">{result.guestName}</p>
-                <div className="mt-4 p-3 bg-green-500/20 rounded-xl border border-green-500/30">
-                  <p className="text-green-300 text-lg font-semibold leading-tight">
-                    {result.partySize > 1 ? (
-                      <>
-                        Admitted <span className="text-white text-2xl mx-1">{result.admittedNow}</span> 
-                        {result.admittedNow === 1 ? 'person' : 'people'}
-                        <div className="text-sm font-normal mt-1 text-green-400/70">
-                          ({result.enteredCount} of {result.partySize} total)
-                        </div>
-                      </>
-                    ) : (
-                      <>One person admitted</>
-                    )}
-                  </p>
-                </div>
-                {result.seatInfo && (
-                  <p className="text-sm text-gray-300 mt-4 bg-gray-800/50 px-3 py-1 rounded-full inline-block">{result.seatInfo}</p>
-                )}
-              </div>
-            )}
+      {/* Party Size Selector Overlay */}
+      {pendingSelection && (
+        <div className="absolute inset-x-0 bottom-0 z-50 bg-void border-t-4 border-signal p-6 animate-in slide-in-from-bottom duration-150">
+          <div className="flex flex-col gap-4">
+            <header className="text-center">
+              <p className="font-mono text-[10px] uppercase text-signal tracking-[0.2em] mb-1">GROUP_DETECTION</p>
+              <h2 className="font-display text-3xl uppercase text-paper leading-none">{pendingSelection.guestName}</h2>
+              <p className="font-mono text-xs text-paper/40 mt-1">REMAINING: {pendingSelection.remaining} OF {pendingSelection.partySize}</p>
+            </header>
 
-            {result.status === 'duplicate' && (
-              <div className="bg-yellow-900/50 border border-yellow-500 rounded-2xl p-8">
-                <AlertCircle className="h-20 w-20 text-yellow-400 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-yellow-300 mb-1">ALREADY ENTERED</h2>
-                <p className="text-2xl font-bold text-white mt-3">{result.guestName}</p>
-                <p className="text-sm text-yellow-300/70 mt-2">
-                  Entered at {new Date(result.enteredAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-                {result.seatInfo && (
-                  <p className="text-sm text-gray-300 mt-2 bg-gray-800/50 px-3 py-1 rounded-full inline-block">{result.seatInfo}</p>
-                )}
-              </div>
-            )}
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setSelectedCount(num)}
+                  disabled={num > pendingSelection.remaining}
+                  className={cn(
+                    "h-14 font-display text-2xl border-2 transition-none flex items-center justify-center",
+                    selectedCount === num 
+                      ? "bg-signal border-signal text-void" 
+                      : num > pendingSelection.remaining
+                        ? "bg-ink border-ink text-paper/10"
+                        : "bg-transparent border-ink text-paper hover:border-signal/50"
+                  )}
+                >
+                  {num}
+                </button>
+              ))}
+            </div>
 
-            {result.status === 'error' && (
-              <div className="bg-red-900/50 border border-red-500 rounded-2xl p-8">
-                <XCircle className="h-20 w-20 text-red-400 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-red-300 mb-1">DENIED</h2>
-                <p className="text-gray-300 mt-3">{result.message}</p>
-              </div>
-            )}
-
-            <Button
-              onClick={startScanner}
-              className="mt-6 w-full bg-gray-700 hover:bg-gray-600"
-              size="lg"
+            <Button 
+              variant="signal" 
+              className="w-full h-16 text-2xl mt-2"
+              onClick={() => confirmAdmission(pendingSelection.invitationId, selectedCount)}
             >
-              Scan Next
+              ADMIT {selectedCount} GUESTS
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Status Panel Flood */}
+      <footer className="shrink-0 min-h-[140px] flex items-stretch border-t-2 border-ink">
+        {processing ? (
+          <div className="w-full bg-ink flex items-center justify-center animate-pulse">
+            <h2 className="font-display text-4xl text-paper/40 tracking-widest uppercase">PROCESSING...</h2>
+          </div>
+        ) : result ? (
+          <div className={cn(
+            "w-full flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-75",
+            result.status === 'success' ? "bg-admitted" : 
+            result.status === 'duplicate' ? "bg-signal" : "bg-denied"
+          )}>
+            <h2 className={cn(
+              "font-display text-5xl uppercase leading-none tracking-tight",
+              result.status === 'error' ? "text-paper" : "text-void"
+            )}>
+              {result.status === 'success' ? 'ADMITTED' : 
+               result.status === 'duplicate' ? 'ALREADY ENTERED' : 'DENIED'}
+            </h2>
+            <p className={cn(
+              "font-mono text-sm uppercase mt-2 font-bold tracking-tight",
+              result.status === 'error' ? "text-paper/80" : "text-void/60"
+            )}>
+              {result.status === 'success' ? result.guestName : 
+               result.status === 'duplicate' ? `ENTRY_TIME: ${new Date(result.enteredAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 
+               result.message}
+            </p>
+          </div>
+        ) : (
+          <div className="w-full bg-ink flex items-center justify-center">
+            <h2 className="font-display text-4xl text-paper/20 tracking-widest uppercase">READY TO SCAN</h2>
+          </div>
         )}
-      </div>
+      </footer>
     </div>
   )
 }
+

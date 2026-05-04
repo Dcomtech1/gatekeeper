@@ -2,18 +2,18 @@
 
 import { useState, useEffect, useTransition } from 'react'
 import { useParams } from 'next/navigation'
-import { Plus, Trash2, Pencil, X, Check, Users } from 'lucide-react'
+import { Plus, Trash2, Pencil, X, Users } from 'lucide-react'
 import { addGuest, updateGuest, deleteGuest } from '@/app/actions/guests'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from 'sonner'
 import type { Invitation, Guest } from '@/lib/types'
 
 type GuestWithInvitation = Guest & { invitation: Invitation | null }
+
+const fieldCls = "w-full bg-background border-2 border-foreground/40 text-foreground font-mono text-sm px-4 py-3 placeholder:text-foreground/40 focus:outline-none focus:border-signal transition-colors"
+const labelCls = "font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/80"
 
 export default function GuestsPage() {
   const { id: eventId } = useParams<{ id: string }>()
@@ -32,7 +32,25 @@ export default function GuestsPage() {
     setGuests((data as any[])?.map(g => ({ ...g, invitation: g.invitation?.[0] ?? null })) ?? [])
   }
 
-  useEffect(() => { loadGuests() }, [eventId])
+  useEffect(() => {
+    const supabase = createClient()
+
+    loadGuests()
+
+    // Poll every 10s as a reliable fallback
+    const poll = setInterval(loadGuests, 10000)
+
+    const channel = supabase
+      .channel(`guests-${eventId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'guests',      filter: `event_id=eq.${eventId}` }, () => loadGuests())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitations', filter: `event_id=eq.${eventId}` }, () => loadGuests())
+      .subscribe()
+
+    return () => {
+      clearInterval(poll)
+      supabase.removeChannel(channel)
+    }
+  }, [eventId])
 
   async function handleAdd(formData: FormData) {
     startTransition(async () => {
@@ -60,78 +78,102 @@ export default function GuestsPage() {
     })
   }
 
+  const totalSeats = guests.reduce((a, g) => a + (g.invitation?.party_size ?? 1), 0)
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      {/* Section header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 border-b-2 border-foreground/10 pb-6">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Guest List</h2>
-          <p className="text-sm text-gray-500">{guests.length} guest{guests.length !== 1 ? 's' : ''} · {guests.reduce((a, g) => a + (g.invitation?.party_size ?? 1), 0)} total seats</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal mb-1">GUEST_MANIFEST</p>
+          <h2 className="font-display text-4xl uppercase text-foreground leading-none">Guest List</h2>
+          <p className="font-mono text-xs text-foreground/70 uppercase tracking-widest mt-2">
+            {guests.length} guest{guests.length !== 1 ? 's' : ''} · {totalSeats} total seats
+          </p>
         </div>
+
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" />Add Guest</Button>
+            <Button variant="signal" className="gap-2 h-12 px-6 text-sm shrink-0">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              ADD_GUEST
+            </Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Add Guest</DialogTitle></DialogHeader>
-            <GuestForm onSubmit={handleAdd} loading={isPending} />
+          <DialogContent className="bg-background border-2 border-foreground/20 max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-display text-3xl uppercase text-foreground">Add Guest</DialogTitle>
+            </DialogHeader>
+            <GuestForm onSubmit={handleAdd} loading={isPending} prefix="add" />
           </DialogContent>
         </Dialog>
       </div>
 
+      {/* Empty state */}
       {guests.length === 0 ? (
-        <div className="text-center py-20 border-2 border-dashed border-gray-200 rounded-xl">
-          <Users className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No guests yet</p>
-          <p className="text-gray-400 text-sm mt-1">Add guests to generate their QR entry cards</p>
+        <div className="py-20 border-2 border-dashed border-foreground/10 flex flex-col items-center justify-center text-center">
+          <Users className="h-10 w-10 text-foreground/10 mb-4" aria-hidden="true" />
+          <p className="font-display text-2xl uppercase text-foreground/20 mb-1">NO_GUESTS_YET</p>
+          <p className="font-mono text-xs text-foreground/20 uppercase tracking-widest">
+            Add guests to generate their QR entry cards
+          </p>
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead>Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead className="text-center">Party Size</TableHead>
-                <TableHead>Seat</TableHead>
-                <TableHead className="w-20"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {guests.map((guest) => (
-                <TableRow key={guest.id}>
-                  <TableCell className="font-medium">{guest.name}</TableCell>
-                  <TableCell className="text-gray-500 text-sm">{guest.phone || guest.email || '—'}</TableCell>
-                  <TableCell className="text-center">
-                    <span className="inline-block bg-indigo-50 text-indigo-700 text-xs font-semibold px-2 py-0.5 rounded-full">
-                      +{guest.invitation?.party_size ?? 1}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-500">{guest.invitation?.seat_info || '—'}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditGuest(guest)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-600" onClick={() => handleDelete(guest.id, guest.name)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="border-2 border-foreground/10 overflow-hidden">
+          {/* Table header */}
+          <div className="grid grid-cols-[1fr_1fr_auto_auto_auto] bg-secondary border-b-2 border-foreground/20 px-4 py-3 gap-4">
+            {['NAME', 'CONTACT', 'PARTY', 'SEAT', ''].map((h) => (
+              <span key={h} className="font-mono text-[9px] uppercase tracking-[0.2em] text-foreground/60">{h}</span>
+            ))}
+          </div>
+
+          {/* Rows */}
+          {guests.map((guest) => (
+            <div
+              key={guest.id}
+              className="grid grid-cols-[1fr_1fr_auto_auto_auto] items-center px-4 py-4 gap-4 border-b border-foreground/5 hover:bg-foreground/2 transition-colors group"
+            >
+              <span className="font-mono text-sm text-foreground font-medium truncate">{guest.name}</span>
+              <span className="font-mono text-xs text-foreground/60 truncate">{guest.phone || guest.email || '—'}</span>
+              <span className="font-display text-lg text-signal" aria-label={`Party size: ${guest.invitation?.party_size ?? 1}`}>
+                +{guest.invitation?.party_size ?? 1}
+              </span>
+              <span className="font-mono text-xs text-foreground/60 whitespace-nowrap">{guest.invitation?.seat_info || '—'}</span>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-foreground/20 hover:text-foreground hover:bg-foreground/5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => setEditGuest(guest)}
+                  aria-label={`Edit guest ${guest.name}`}
+                >
+                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-denied/40 hover:text-denied hover:bg-denied/5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => handleDelete(guest.id, guest.name)}
+                  aria-label={`Remove guest ${guest.name}`}
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Edit dialog */}
       <Dialog open={!!editGuest} onOpenChange={(o) => !o && setEditGuest(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Edit Guest</DialogTitle></DialogHeader>
+        <DialogContent className="bg-background border-2 border-foreground/20 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-3xl uppercase text-foreground">Edit Guest</DialogTitle>
+          </DialogHeader>
           {editGuest && (
             <GuestForm
               onSubmit={handleUpdate}
               loading={isPending}
+              prefix="edit"
               defaultValues={{
                 name: editGuest.name,
                 phone: editGuest.phone ?? '',
@@ -151,39 +193,44 @@ function GuestForm({
   onSubmit,
   loading,
   defaultValues,
+  prefix,
 }: {
   onSubmit: (f: FormData) => void
   loading: boolean
+  prefix: string
   defaultValues?: { name: string; phone: string; email: string; party_size: number; seat_info: string }
 }) {
   return (
-    <form action={onSubmit} className="space-y-4">
-      <div className="space-y-1">
-        <Label htmlFor="g-name">Full Name *</Label>
-        <Input id="g-name" name="name" defaultValue={defaultValues?.name} placeholder="e.g. Ngozi Okafor" required />
+    <form action={onSubmit} className="flex flex-col gap-5 mt-2">
+      <div className="flex flex-col gap-2">
+        <label htmlFor={`${prefix}-g-name`} className={labelCls}>Full Name *</label>
+        <input id={`${prefix}-g-name`} name="name" defaultValue={defaultValues?.name} placeholder="e.g. Ngozi Okafor" required className={fieldCls} />
       </div>
+
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label htmlFor="g-phone">Phone</Label>
-          <Input id="g-phone" name="phone" defaultValue={defaultValues?.phone} placeholder="+234..." />
+        <div className="flex flex-col gap-2">
+          <label htmlFor={`${prefix}-g-phone`} className={labelCls}>Phone</label>
+          <input id={`${prefix}-g-phone`} name="phone" defaultValue={defaultValues?.phone} placeholder="+234..." className={fieldCls} />
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="g-email">Email</Label>
-          <Input id="g-email" name="email" type="email" defaultValue={defaultValues?.email} placeholder="Optional" />
+        <div className="flex flex-col gap-2">
+          <label htmlFor={`${prefix}-g-email`} className={labelCls}>Email</label>
+          <input id={`${prefix}-g-email`} name="email" type="email" defaultValue={defaultValues?.email} placeholder="Optional" className={fieldCls} />
         </div>
       </div>
+
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label htmlFor="g-party">Admits (party size) *</Label>
-          <Input id="g-party" name="party_size" type="number" min="1" max="20" defaultValue={defaultValues?.party_size ?? 1} required />
+        <div className="flex flex-col gap-2">
+          <label htmlFor={`${prefix}-g-party`} className={labelCls}>Admits (party size) *</label>
+          <input id={`${prefix}-g-party`} name="party_size" type="number" min="1" max="20" defaultValue={defaultValues?.party_size ?? 1} required className={fieldCls} />
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="g-seat">Seat / Table</Label>
-          <Input id="g-seat" name="seat_info" defaultValue={defaultValues?.seat_info} placeholder="e.g. Table 5" />
+        <div className="flex flex-col gap-2">
+          <label htmlFor={`${prefix}-g-seat`} className={labelCls}>Seat / Table</label>
+          <input id={`${prefix}-g-seat`} name="seat_info" defaultValue={defaultValues?.seat_info} placeholder="e.g. Table 5" className={fieldCls} />
         </div>
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Saving...' : 'Save Guest'}
+
+      <Button type="submit" variant="signal" className="w-full h-12 text-sm mt-2" disabled={loading}>
+        {loading ? 'SAVING...' : 'SAVE GUEST'}
       </Button>
     </form>
   )

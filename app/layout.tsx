@@ -1,9 +1,20 @@
 import type { Metadata } from 'next'
-import { Geist } from 'next/font/google'
+import { Bebas_Neue, DM_Mono } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
-const geist = Geist({ subsets: ['latin'] })
+const bebasNeue = Bebas_Neue({ 
+  weight: '400', 
+  subsets: ['latin'],
+  variable: '--font-display'
+})
+
+const dmMono = DM_Mono({ 
+  weight: ['400', '500'], 
+  subsets: ['latin'],
+  variable: '--font-mono'
+})
 
 export const metadata: Metadata = {
   title: 'GateKeep — Event Access Management',
@@ -12,10 +23,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${geist.className} antialiased bg-gray-50`}>
-        {children}
-        <Toaster richColors position="top-right" />
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${bebasNeue.variable} ${dmMono.variable} antialiased font-mono`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster richColors position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   )

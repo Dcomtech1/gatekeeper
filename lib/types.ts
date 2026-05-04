@@ -1,4 +1,4 @@
-export type EventStatus = 'draft' | 'active' | 'ended'
+export type EventStatus = 'draft' | 'published' | 'live' | 'ended'
 export type InvitationStatus = 'pending' | 'entered' | 'cancelled'
 
 export interface Event {
