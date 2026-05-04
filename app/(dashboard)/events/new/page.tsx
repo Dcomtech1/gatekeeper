@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -14,14 +14,18 @@ const hintCls  = "font-mono text-[10px] text-foreground/60 uppercase tracking-wi
 export default function NewEventPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const isSubmitting = useRef(false)
 
   async function handleSubmit(formData: FormData) {
+    if (isSubmitting.current) return
+    isSubmitting.current = true
     setLoading(true)
     setError(null)
     const result = await createEvent(formData)
     if (result?.error) {
       setError(result.error)
       setLoading(false)
+      isSubmitting.current = false
     }
   }
 
