@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { login } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
+import { loginSchema } from '@/lib/validations/auth'
+import { ZodError } from 'zod'
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
@@ -12,9 +14,23 @@ export default function LoginPage() {
   async function handleSubmit(formData: FormData) {
     setLoading(true)
     setError(null)
-    const result = await login(formData)
-    if (result?.error) {
-      setError(result.error)
+
+    try {
+      // Client-side validation
+      const data = Object.fromEntries(formData.entries())
+      loginSchema.parse(data)
+
+      const result = await login(formData)
+      if (result?.error) {
+        setError(result.error)
+        setLoading(false)
+      }
+    } catch (err) {
+      if (err instanceof ZodError) {
+        setError(err.issues[0].message)
+      } else {
+        setError('An unexpected error occurred')
+      }
       setLoading(false)
     }
   }

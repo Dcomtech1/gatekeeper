@@ -146,7 +146,7 @@ export default function LiveDashboardPage() {
           <span className="font-mono text-xs text-signal uppercase">{arrived} / {totalSeats}</span>
         </div>
         <div
-          className="w-full h-5 bg-background border-2 border-foreground/40 relative p-[2px]"
+          className="w-full h-5 bg-background border-2 border-foreground/40 relative p-0.5"
           role="progressbar"
           aria-valuenow={arrivalRate}
           aria-valuemin={0}

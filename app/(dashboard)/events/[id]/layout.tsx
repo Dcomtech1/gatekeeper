@@ -83,7 +83,7 @@ export default async function EventLayout({
               className="
                relative font-mono text-xs uppercase tracking-widest px-5 py-3 whitespace-nowrap
                 text-foreground/70 hover:text-foreground transition-colors
-                border-b-2 border-transparent -mb-[2px]
+                border-b-2 border-transparent -mb-0.5
                 hover:border-foreground/60
                 focus-visible:outline-none focus-visible:text-signal focus-visible:border-signal
               "
