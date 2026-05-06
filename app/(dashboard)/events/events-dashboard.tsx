@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { Plus, Download, BarChart3, Users, UserCheck, Clock, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { EventCard } from '@/components/event-card'
@@ -26,6 +27,7 @@ export function EventsDashboardClient({
   const [invitations, setInvitations] = useState<Invitation[]>(initialInvitations)
   const [logs, setLogs] = useState<{ invitation_id: string }[]>(initialLogs)
   const [deleteTarget, setDeleteTarget] = useState<Event | null>(null)
+  const [filter, setFilter] = useState<string>('all')
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
@@ -96,7 +98,7 @@ export function EventsDashboardClient({
       {/* Left: Events List */}
       <div className="lg:col-span-7 flex flex-col gap-6">
         <header className="flex items-center gap-4 mb-2">
-          <h2 className="font-display text-3xl uppercase text-foreground">ACTIVE_EVENTS</h2>
+          <h2 className="font-display text-3xl uppercase text-foreground">EVENTS</h2>
           <div className="flex-1 border-t-2 border-foreground" />
         </header>
 
@@ -112,8 +114,42 @@ export function EventsDashboardClient({
           />
         ) : (
           <>
+          {/* Filter Bar */}
+          <div className="flex flex-wrap gap-2 mb-8">
+            {[
+              { id: 'all', label: 'ALL_EVENTS' },
+              { id: 'active', label: 'ACTIVE' },
+              { id: 'closed', label: 'CLOSED' },
+              { id: 'draft', label: 'DRAFT' },
+              { id: 'published', label: 'PUBLISHED' },
+            ].map((f) => {
+              const isActive = filter === f.id
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
+                  className={cn(
+                    "px-4 py-1.5 font-mono text-[10px] uppercase tracking-widest border-2 transition-colors",
+                    isActive 
+                      ? "bg-foreground text-background border-foreground" 
+                      : "bg-transparent text-foreground/60 border-foreground/10 hover:border-foreground/40 hover:text-foreground"
+                  )}
+                >
+                  {f.label}
+                </button>
+              )
+            })}
+          </div>
+
           <div className="flex flex-col gap-6">
-            {events.map((event) => {
+            {events
+              .filter(e => {
+                if (filter === 'all') return true
+                if (filter === 'active') return e.status === 'live'
+                if (filter === 'closed') return e.status === 'ended'
+                return e.status === filter
+              })
+              .map((event) => {
               const s = eventStats[event.id] || { checkedIn: 0, totalCapacity: 0 }
               return (
                 <div key={event.id} className="relative group">

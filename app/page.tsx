@@ -55,7 +55,7 @@ export default async function HomePage() {
               <span className="text-[clamp(80px,15vw,160px)] text-foreground">GUESTS.</span>
             </h1>
             
-            <p className="mt-8 text-foreground/90 text-lg md:text-xl max-w-[480px] leading-tight">
+            <p className="mt-8 text-foreground/90 text-lg md:text-xl max-w-120 leading-tight">
               QR-coded entry cards. Real-time scanning. <br/>
               Full control over your door.
             </p>
@@ -69,7 +69,7 @@ export default async function HomePage() {
 
           {/* Desktop Only: Mock Entry Card */}
           <div className="hidden lg:flex justify-center items-center">
-            <div className="relative w-[420px] bg-background border-2 border-signal p-8 flex flex-col gap-6 shadow-[20px_20px_0px_0px_rgba(255,214,0,0.15)]">
+            <div className="relative w-105 bg-background border-2 border-signal p-8 flex flex-col gap-6 shadow-[20px_20px_0px_0px_rgba(255,214,0,0.15)]">
               <div className="flex justify-between items-start">
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase text-signal/80 mb-1">EVENT_ACCESS_PASS</span>

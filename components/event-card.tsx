@@ -50,7 +50,7 @@ export function EventCard({
           </div>
           <div className="flex items-center gap-2 mt-2">
             <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-foreground/80 border border-foreground/40 px-2 py-0.5">
-              MANIFEST NO. {Math.floor(Math.random() * 9000) + 1000}
+              MANIFEST NO. {name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 9000 + 1000}
             </span>
             <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-foreground/80">
               {date} // {time}
@@ -114,7 +114,7 @@ export function EventCard({
             GATEKEEP_ENTRY_SYSTEM // ENCRYPTION_ACTIVE
           </span>
           <span className="font-mono text-[8px] uppercase text-foreground/50">
-            © {new Date().getFullYear()}_GATEKEEP_CORP
+            © 2026_GATEKEEP_CORP
           </span>
         </div>
       </div>
