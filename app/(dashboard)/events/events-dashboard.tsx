@@ -28,6 +28,8 @@ export function EventsDashboardClient({
   const [logs, setLogs] = useState<{ invitation_id: string }[]>(initialLogs)
   const [deleteTarget, setDeleteTarget] = useState<Event | null>(null)
   const [filter, setFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<'updated' | 'created' | 'name'>('updated')
+  const [search, setSearch] = useState('')
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
@@ -81,12 +83,16 @@ export function EventsDashboardClient({
     return acc
   }, {} as Record<string, { totalCapacity: number, checkedIn: number, totalInvited: number }>)
 
-  // Global stats
-  const stats = {
-    totalGuests: invitations.filter(i => i.status !== 'cancelled').reduce((sum, inv) => sum + inv.party_size, 0),
-    checkedIn: logs.length,
-    totalCapacity: events.reduce((sum, e) => sum + (e.capacity || 0), 0),
-  }
+  // Global stats (Aggregated for LIVE events only)
+  const stats = events
+    .filter(e => e.status === 'live')
+    .reduce((acc, event) => {
+      const s = eventStats[event.id] || { checkedIn: 0, totalCapacity: 0, totalInvited: 0 }
+      acc.totalGuests += s.totalInvited
+      acc.checkedIn += s.checkedIn
+      acc.totalCapacity += s.totalCapacity
+      return acc
+    }, { totalGuests: 0, checkedIn: 0, totalCapacity: 0 })
 
   const remaining = stats.totalCapacity - stats.checkedIn
   const capacityPercent = stats.totalCapacity > 0 
@@ -114,40 +120,91 @@ export function EventsDashboardClient({
           />
         ) : (
           <>
-          {/* Filter Bar */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            {[
-              { id: 'all', label: 'ALL_EVENTS' },
-              { id: 'active', label: 'ACTIVE' },
-              { id: 'closed', label: 'CLOSED' },
-              { id: 'draft', label: 'DRAFT' },
-              { id: 'published', label: 'PUBLISHED' },
-            ].map((f) => {
-              const isActive = filter === f.id
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => setFilter(f.id)}
-                  className={cn(
-                    "px-4 py-1.5 font-mono text-[10px] uppercase tracking-widest border-2 transition-colors",
-                    isActive 
-                      ? "bg-foreground text-background border-foreground" 
-                      : "bg-transparent text-foreground/60 border-foreground/10 hover:border-foreground/40 hover:text-foreground"
-                  )}
+          {/* Compact Control Bar */}
+          <div className="flex flex-col gap-6 mb-10 pb-8 border-b-2 border-foreground/10">
+            {/* Row 1: Search */}
+            <div className="flex flex-col gap-1.5">
+              <span className="font-mono text-[9px] uppercase text-foreground/40 tracking-[0.2em]">SEARCH_MANIFEST</span>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="SEARCH BY NAME OR VENUE..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full bg-transparent border-2 border-foreground/20 px-4 py-3 font-mono text-sm uppercase tracking-widest text-foreground focus:outline-none focus:border-signal placeholder:text-foreground/20 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Row 2: Filter & Sort */}
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Status Filter */}
+              <div className="flex flex-col gap-1.5 flex-1">
+                <span className="font-mono text-[9px] uppercase text-foreground/40 tracking-[0.2em]">FILTER_BY_STATUS</span>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'all', label: 'ALL' },
+                    { id: 'active', label: 'ACTIVE' },
+                    { id: 'closed', label: 'CLOSED' },
+                    { id: 'draft', label: 'DRAFT' },
+                    { id: 'published', label: 'PUBLISHED' },
+                  ].map((f) => {
+                    const isActive = filter === f.id
+                    return (
+                      <button
+                        key={f.id}
+                        onClick={() => setFilter(f.id)}
+                        className={cn(
+                          "px-3 py-1 font-mono text-[10px] uppercase tracking-widest border transition-colors",
+                          isActive 
+                            ? "bg-foreground text-background border-foreground" 
+                            : "bg-transparent text-foreground/60 border-foreground/20 hover:border-foreground/50 hover:text-foreground"
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Sort Selection */}
+              <div className="flex flex-col gap-1.5 min-w-45">
+                <span className="font-mono text-[9px] uppercase text-foreground/40 tracking-[0.2em]">SORT_BY</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-transparent border border-foreground/20 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-foreground focus:outline-none focus:border-signal appearance-none cursor-pointer h-8.5"
+                  style={{ backgroundImage: 'linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%)', backgroundPosition: 'calc(100% - 15px) center, calc(100% - 10px) center', backgroundSize: '5px 5px, 5px 5px', backgroundRepeat: 'no-repeat' }}
                 >
-                  {f.label}
-                </button>
-              )
-            })}
+                  <option value="updated" className="bg-background">LAST_INTERACTED</option>
+                  <option value="created" className="bg-background">DATE_CREATED</option>
+                  <option value="name" className="bg-background">NAME_A_Z</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col gap-6">
-            {events
+            {[...events]
               .filter(e => {
+                // Search filter
+                if (search) {
+                  const s = search.toLowerCase()
+                  const matches = e.name.toLowerCase().includes(s) || e.venue.toLowerCase().includes(s)
+                  if (!matches) return false
+                }
+                
+                // Status filter
                 if (filter === 'all') return true
                 if (filter === 'active') return e.status === 'live'
                 if (filter === 'closed') return e.status === 'ended'
                 return e.status === filter
+              })
+              .sort((a, b) => {
+                if (sortBy === 'name') return a.name.localeCompare(b.name)
+                if (sortBy === 'created') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
               })
               .map((event) => {
               const s = eventStats[event.id] || { checkedIn: 0, totalCapacity: 0 }
@@ -249,7 +306,7 @@ export function EventsDashboardClient({
               <span className="font-mono text-[10px] text-foreground/40 uppercase">GLOBAL_CAPACITY_LOAD</span>
               <span className="font-mono text-xs text-signal uppercase">{capacityPercent.toFixed(0)}%</span>
             </div>
-            <div className="w-full h-6 bg-background border-2 border-foreground relative p-[2px]">
+            <div className="w-full h-6 bg-background border-2 border-foreground relative p-0.5">
               <div 
                 className="h-full bg-signal transition-all duration-1000 ease-out"
                 style={{ width: `${capacityPercent}%` }}

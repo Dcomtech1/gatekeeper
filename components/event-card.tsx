@@ -84,11 +84,11 @@ export function EventCard({
             </div>
 
             {/* Capacity Visualizer */}
-            <div className="flex flex-col gap-1.5 flex-1 min-w-[120px]">
+            <div className="flex flex-col gap-1.5 flex-1 min-w-30">
               <span className="font-mono text-[10px] uppercase text-foreground/70">
                 CAPACITY_LOAD
               </span>
-              <div className="w-full h-5 border-2 border-foreground/40 bg-background relative p-[2px]">
+              <div className="w-full h-5 border-2 border-foreground/40 bg-background relative p-0.5">
                 <div
                   className="h-full bg-signal transition-all duration-500"
                   style={{ width: `${percentage}%` }}
