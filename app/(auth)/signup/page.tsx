@@ -4,12 +4,23 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { signup } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
+import { Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { signupSchema } from '@/lib/validations/auth'
 import { ZodError } from 'zod'
 
 export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [password, setPassword] = useState('')
+
+  const requirements = [
+    { label: 'MIN_8_CHARACTERS', test: (pw: string) => pw.length >= 8 },
+    { label: 'UPPERCASE_LETTER', test: (pw: string) => /[A-Z]/.test(pw) },
+    { label: 'LOWERCASE_LETTER', test: (pw: string) => /[a-z]/.test(pw) },
+    { label: 'NUMERIC_DIGIT', test: (pw: string) => /[0-9]/.test(pw) },
+    { label: 'SPECIAL_CHARACTER', test: (pw: string) => /[^A-Za-z0-9]/.test(pw) },
+  ]
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)
@@ -89,9 +100,35 @@ export default function SignupPage() {
             type="password"
             autoComplete="new-password"
             required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             placeholder="Min. 8 characters"
             className="w-full bg-secondary border-2 border-foreground/20 text-foreground font-mono text-sm px-4 py-3 placeholder:text-foreground/20 focus:outline-none focus:border-signal transition-colors"
           />
+
+          {/* Password Requirements Checklist */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mt-2 bg-foreground/5 p-3 border border-foreground/10">
+            {requirements.map((req) => {
+              const isMet = req.test(password)
+              return (
+                <div 
+                  key={req.label} 
+                  className={cn(
+                    "flex items-center gap-2 font-mono text-[9px] uppercase tracking-wider transition-colors",
+                    isMet ? "text-signal" : "text-foreground/30"
+                  )}
+                >
+                  <div className={cn(
+                    "size-3 border flex items-center justify-center shrink-0",
+                    isMet ? "border-signal bg-signal/10" : "border-foreground/20"
+                  )}>
+                    {isMet && <Check className="size-2" strokeWidth={4} />}
+                  </div>
+                  {req.label}
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2">
