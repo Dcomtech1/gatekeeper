@@ -26,7 +26,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         <div className="flex items-center gap-4">
           <span
-            className="font-mono text-[10px] uppercase tracking-widest text-foreground/60 hidden sm:block truncate max-w-[240px]"
+            className="font-mono text-[10px] uppercase tracking-widest text-foreground/60 hidden sm:block truncate max-w-60"
             aria-label={`Signed in as ${user.email}`}
           >
             {user.email}

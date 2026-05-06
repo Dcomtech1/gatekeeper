@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { QrCode, Zap, BarChart3, ShieldCheck, ArrowRight } from 'lucide-react'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -54,7 +55,7 @@ export default async function HomePage() {
               <span className="text-[clamp(80px,15vw,160px)] text-foreground">GUESTS.</span>
             </h1>
             
-            <p className="mt-8 text-foreground/90 text-lg md:text-xl max-w-[480px] leading-tight">
+            <p className="mt-8 text-foreground/90 text-lg md:text-xl max-w-120 leading-tight">
               QR-coded entry cards. Real-time scanning. <br/>
               Full control over your door.
             </p>
@@ -68,7 +69,7 @@ export default async function HomePage() {
 
           {/* Desktop Only: Mock Entry Card */}
           <div className="hidden lg:flex justify-center items-center">
-            <div className="relative w-[420px] bg-background border-2 border-signal p-8 flex flex-col gap-6 shadow-[20px_20px_0px_0px_rgba(255,214,0,0.15)]">
+            <div className="relative w-105 bg-background border-2 border-signal p-8 flex flex-col gap-6 shadow-[20px_20px_0px_0px_rgba(255,214,0,0.15)]">
               <div className="flex justify-between items-start">
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase text-signal/80 mb-1">EVENT_ACCESS_PASS</span>
@@ -118,27 +119,77 @@ export default async function HomePage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 divide-y-2 md:divide-y-0 md:divide-x-2 divide-background">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
             {[
-              { num: "01", title: "CREATE YOUR EVENT", desc: "Define your capacity and generate access link tokens." },
-              { num: "02", title: "INVITE YOUR GUESTS", desc: "Send secure QR-coded boarding passes via SMS or email." },
-              { num: "03", title: "SCAN AT THE DOOR", desc: "Use any mobile device to admit guests in under 0.5 seconds." }
+              { num: "01", title: "Create your event", desc: "Set the event name, date, venue, and total capacity in minutes." },
+              { num: "02", title: "Add your guest list", desc: "Enter each guest with their party size and seat assignment. GateKeep generates their unique QR card automatically." },
+              { num: "03", title: "Print & distribute cards", desc: "Download beautifully designed entry cards and print them. Hand-deliver or post them to your guests." },
+              { num: "04", title: "Scan at the gate", desc: "Share a scanner link with your ushers. They scan every card at the entrance — green means in, red means out." }
             ].map((step, i) => (
-              <div key={step.num} className={cn("flex flex-col gap-4 py-8 md:py-0", i === 0 ? "md:pr-12" : i === 1 ? "md:px-12" : "md:pl-12")}>
+              <div key={step.num} className="flex flex-col gap-4">
                 <span className="font-display text-5xl text-signal">{step.num}</span>
-                <h3 className="font-display text-4xl uppercase leading-none">{step.title}</h3>
-                <p className="font-mono text-sm leading-relaxed max-w-xs">{step.desc}</p>
+                <h3 className="font-display text-3xl uppercase leading-tight">{step.title}</h3>
+                <p className="font-mono text-sm leading-relaxed">{step.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Section 3: Use Cases Ticker */}
-      <section className="py-24 bg-background">
-        <h2 className="px-6 md:px-12 font-display text-4xl uppercase text-foreground mb-10 tracking-widest">BUILT FOR</h2>
+      {/* Section 3: Features */}
+      <section className="py-24 md:py-32 px-6 md:px-12 bg-background relative overflow-hidden border-b-2 border-foreground/20">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-20">
+            <h3 className="text-signal font-display text-2xl tracking-[0.2em] uppercase mb-4">FEATURES</h3>
+            <h2 className="font-display text-5xl md:text-8xl uppercase leading-none mb-8">Everything you need at the gate</h2>
+            <p className="font-mono text-foreground/70 max-w-2xl mx-auto text-lg md:text-xl leading-tight">
+              Built specifically for the challenges of Nigerian events — and any event where access control matters.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              {
+                icon: <QrCode className="w-10 h-10" />,
+                title: "Personalised QR Entry Cards",
+                desc: "Every guest gets a unique QR code tied to their name, party size, and seat. Printed and handed out before the event."
+              },
+              {
+                icon: <Zap className="w-10 h-10" />,
+                title: "Instant Gate Scanning",
+                desc: "Ushers scan cards using their phone browser — no app download, no login. Entry confirmed in under two seconds."
+              },
+              {
+                icon: <BarChart3 className="w-10 h-10" />,
+                title: "Live Attendance Dashboard",
+                desc: "Watch arrivals in real time from any device. See who's in, who's pending, and your live headcount — all updating instantly."
+              },
+              {
+                icon: <ShieldCheck className="w-10 h-10" />,
+                title: "Zero Uninvited Guests",
+                desc: "Every QR code works exactly once. Duplicates are flagged immediately. No valid card means no entry — no exceptions."
+              }
+            ].map((feature, i) => (
+              <div key={i} className="group p-8 border-2 border-foreground/10 bg-secondary/30 hover:border-signal transition-colors flex flex-col gap-6 relative">
+                <div className="text-signal group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
+                </div>
+                <h3 className="font-display text-3xl uppercase leading-tight">{feature.title}</h3>
+                <p className="font-mono text-sm text-foreground/80 leading-relaxed">{feature.desc}</p>
+                <div className="absolute top-4 right-4 text-[10px] font-mono text-foreground/20 group-hover:text-signal/40">
+                  REF_{i+1}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Section 4: Use Cases Ticker */}
+      <section className="py-24 bg-background border-b-2 border-foreground/20">
+        <h2 className="px-6 md:px-12 font-display text-4xl uppercase text-foreground mb-10 tracking-widest text-center md:text-left">BUILT FOR</h2>
         
-        <div className="border-y-2 border-foreground/40 py-8 bg-secondary overflow-hidden flex">
+        <div className="border-y-2 border-foreground/40 py-8 bg-secondary/10 overflow-hidden flex">
           <div className="animate-marquee flex items-center">
             {Array(2).fill(0).map((_, i) => (
               <div key={i} className="flex items-center">
@@ -153,14 +204,57 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t-2 border-foreground/40 py-12 px-6 md:px-12 bg-background">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="font-display text-3xl tracking-[0.3em] uppercase text-foreground">GATEKEEP</div>
-          <p className="font-mono text-xs text-foreground/70 uppercase tracking-widest text-center md:text-right">
-            Built for organizers who mean business. <br/>
-            © 2026 GATEKEEP SYSTEMS. ALL RIGHTS RESERVED.
+      {/* Section 5: CTA */}
+      <section className="py-32 px-6 md:px-12 bg-void border-b-4 border-signal text-center relative overflow-hidden">
+        {/* Background Noise/Pattern */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+        
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <h2 className="font-display text-6xl md:text-9xl uppercase leading-none mb-8 tracking-tighter">
+            Ready to take <br/> control of your event?
+          </h2>
+          <p className="font-mono text-xl md:text-2xl text-signal/90 mb-12 uppercase tracking-wide">
+            Set up in minutes. No technical knowledge required.
           </p>
+          <Link href="/login">
+            <Button variant="signal" size="lg" className="h-20 px-12 text-3xl group">
+              CREATE FREE ACCOUNT 
+              <ArrowRight className="ml-4 w-8 h-8 group-hover:translate-x-2 transition-transform" />
+            </Button>
+          </Link>
+        </div>
+
+        {/* Decorative elements */}
+        <div className="absolute -bottom-10 -left-10 w-40 h-40 border-4 border-signal/20 rotate-45" />
+        <div className="absolute -top-10 -right-10 w-40 h-40 border-4 border-signal/20 -rotate-12" />
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-6 md:px-12 bg-background border-t-2 border-foreground/10">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-8 max-w-7xl mx-auto">
+          <div className="flex flex-col items-center md:items-start gap-2">
+            <div className="font-display text-4xl tracking-[0.3em] uppercase text-foreground">GATEKEEP</div>
+            <p className="font-mono text-[10px] text-foreground/50 uppercase tracking-[0.2em]">
+              © 2026 GATEKEEP. BUILT FOR EVENTS THAT MATTER.
+            </p>
+          </div>
+          
+          <div className="flex gap-12">
+            <div className="flex flex-col gap-2">
+              <span className="font-display text-xs text-signal tracking-widest uppercase">Navigation</span>
+              <div className="flex flex-col gap-1 font-mono text-sm uppercase">
+                <Link href="/login" className="hover:text-signal transition-colors">Login</Link>
+                <Link href="/login" className="hover:text-signal transition-colors">Register</Link>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="font-display text-xs text-signal tracking-widest uppercase">Social</span>
+              <div className="flex flex-col gap-1 font-mono text-sm uppercase">
+                <a href="#" className="hover:text-signal transition-colors">Twitter</a>
+                <a href="#" className="hover:text-signal transition-colors">Instagram</a>
+              </div>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

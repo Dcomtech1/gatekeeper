@@ -50,7 +50,7 @@ export function EventCard({
           </div>
           <div className="flex items-center gap-2 mt-2">
             <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-foreground/80 border border-foreground/40 px-2 py-0.5">
-              MANIFEST NO. {Math.floor(Math.random() * 9000) + 1000}
+              MANIFEST NO. {name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 9000 + 1000}
             </span>
             <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-foreground/80">
               {date} // {time}
@@ -84,11 +84,11 @@ export function EventCard({
             </div>
 
             {/* Capacity Visualizer */}
-            <div className="flex flex-col gap-1.5 flex-1 min-w-[120px]">
+            <div className="flex flex-col gap-1.5 flex-1 min-w-30">
               <span className="font-mono text-[10px] uppercase text-foreground/70">
                 CAPACITY_LOAD
               </span>
-              <div className="w-full h-5 border-2 border-foreground/40 bg-background relative p-[2px]">
+              <div className="w-full h-5 border-2 border-foreground/40 bg-background relative p-0.5">
                 <div
                   className="h-full bg-signal transition-all duration-500"
                   style={{ width: `${percentage}%` }}
@@ -114,7 +114,7 @@ export function EventCard({
             GATEKEEP_ENTRY_SYSTEM // ENCRYPTION_ACTIVE
           </span>
           <span className="font-mono text-[8px] uppercase text-foreground/50">
-            © {new Date().getFullYear()}_GATEKEEP_CORP
+            © 2026_GATEKEEP_CORP
           </span>
         </div>
       </div>
