@@ -4,23 +4,33 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { signup } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
+import { signupSchema } from '@/lib/validations/auth'
+import { ZodError } from 'zod'
 
 export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(formData: FormData) {
-    const password = formData.get('password') as string
-    const confirm = formData.get('confirm') as string
-    if (password !== confirm) {
-      setError('Passwords do not match')
-      return
-    }
     setLoading(true)
     setError(null)
-    const result = await signup(formData)
-    if (result?.error) {
-      setError(result.error)
+
+    try {
+      // Client-side validation
+      const data = Object.fromEntries(formData.entries())
+      signupSchema.parse(data)
+
+      const result = await signup(formData)
+      if (result?.error) {
+        setError(result.error)
+        setLoading(false)
+      }
+    } catch (err) {
+      if (err instanceof ZodError) {
+        setError(err.errors[0].message)
+      } else {
+        setError('An unexpected error occurred')
+      }
       setLoading(false)
     }
   }
@@ -71,7 +81,7 @@ export default function SignupPage() {
             htmlFor="signup-password"
             className="font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/60"
           >
-            Password <span className="text-foreground/30">(min. 6 characters)</span>
+            Password <span className="text-foreground/30">(MIN. 8 CHARS + UPPER/LOWER/NUM/SPEC)</span>
           </label>
           <input
             id="signup-password"
@@ -79,8 +89,7 @@ export default function SignupPage() {
             type="password"
             autoComplete="new-password"
             required
-            minLength={6}
-            placeholder="Min. 6 characters"
+            placeholder="Min. 8 characters"
             className="w-full bg-secondary border-2 border-foreground/20 text-foreground font-mono text-sm px-4 py-3 placeholder:text-foreground/20 focus:outline-none focus:border-signal transition-colors"
           />
         </div>
