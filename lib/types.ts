@@ -1,5 +1,7 @@
 export type EventStatus = 'draft' | 'published' | 'live' | 'ended'
+export type EventType = 'closed' | 'open'
 export type InvitationStatus = 'pending' | 'entered' | 'cancelled'
+export type RegistrationStatus = 'pending' | 'accepted' | 'rejected'
 
 export interface Event {
   id: string
@@ -11,6 +13,9 @@ export interface Event {
   description: string | null
   capacity: number | null
   status: EventStatus
+  event_type: EventType
+  registration_slug: string | null
+  max_registrations: number | null
   created_at: string
   updated_at: string
 }
@@ -51,4 +56,23 @@ export interface EntryLog {
   scanned_at: string
   notes: string | null
   invitation?: Invitation & { guest?: Guest }
+}
+
+export interface Registration {
+  id: string
+  event_id: string
+  full_name: string
+  email: string
+  phone: string | null
+  status: RegistrationStatus
+  created_at: string
+}
+
+export interface EmailLog {
+  id: string
+  event_id: string
+  recipient_email: string
+  email_type: 'invitation' | 'reminder'
+  subject: string | null
+  sent_at: string
 }

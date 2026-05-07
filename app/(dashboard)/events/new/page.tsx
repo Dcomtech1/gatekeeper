@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Lock, Globe } from 'lucide-react'
 import { createEvent } from '@/app/actions/events'
 import { Button } from '@/components/ui/button'
 import { fieldCls, labelCls, hintCls } from '@/lib/form-styles'
@@ -11,6 +11,7 @@ import { fieldCls, labelCls, hintCls } from '@/lib/form-styles'
 export default function NewEventPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [eventType, setEventType] = useState<'closed' | 'open'>('closed')
   const isSubmitting = useRef(false)
 
   async function handleSubmit(formData: FormData) {
@@ -40,9 +41,19 @@ export default function NewEventPage() {
         <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal mb-2">INITIALIZE_NEW_EVENT</p>
         <h1 className="font-display text-5xl uppercase text-foreground leading-none">Create Event</h1>
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/50 mt-3 leading-relaxed border-l-2 border-signal/40 pl-3">
-          New events start as <span className="text-foreground/80">DRAFT</span>.
-          Set to <span className="text-foreground/80">PUBLISHED</span> when your guest list is ready,
-          then <span className="text-signal">LIVE</span> on event day to open scanning for ushers.
+          {eventType === 'closed' ? (
+            <>
+              New events start as <span className="text-foreground/80">DRAFT</span>.
+              Set to <span className="text-foreground/80">PUBLISHED</span> when your guest list is ready,
+              then <span className="text-signal">LIVE</span> on event day to open scanning for ushers.
+            </>
+          ) : (
+            <>
+              <span className="text-foreground/80">OPEN</span> events generate a public registration link.
+              Users sign up, you review and accept who you want.
+              Accepted guests receive their QR entry pass via email.
+            </>
+          )}
         </p>
       </div>
 
@@ -52,6 +63,48 @@ export default function NewEventPage() {
             ⚠ {error}
           </div>
         )}
+
+        {/* Event Type Selector */}
+        <div className="flex flex-col gap-2">
+          <span className={labelCls}>Event Type *</span>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setEventType('closed')}
+              className={`flex items-center gap-3 p-4 border-2 transition-all ${
+                eventType === 'closed'
+                  ? 'border-signal bg-signal/10 text-foreground'
+                  : 'border-foreground/20 text-foreground/60 hover:border-foreground/40'
+              }`}
+            >
+              <Lock className={`h-5 w-5 shrink-0 ${eventType === 'closed' ? 'text-signal' : ''}`} />
+              <div className="text-left">
+                <p className="font-display text-lg uppercase leading-none">Closed</p>
+                <p className="font-mono text-[9px] uppercase tracking-widest text-foreground/50 mt-1">
+                  You build the guest list
+                </p>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setEventType('open')}
+              className={`flex items-center gap-3 p-4 border-2 transition-all ${
+                eventType === 'open'
+                  ? 'border-signal bg-signal/10 text-foreground'
+                  : 'border-foreground/20 text-foreground/60 hover:border-foreground/40'
+              }`}
+            >
+              <Globe className={`h-5 w-5 shrink-0 ${eventType === 'open' ? 'text-signal' : ''}`} />
+              <div className="text-left">
+                <p className="font-display text-lg uppercase leading-none">Open</p>
+                <p className="font-mono text-[9px] uppercase tracking-widest text-foreground/50 mt-1">
+                  Public sign-up link
+                </p>
+              </div>
+            </button>
+          </div>
+          <input type="hidden" name="event_type" value={eventType} />
+        </div>
 
         <div className="flex flex-col gap-2">
           <label htmlFor="new-ev-name" className={labelCls}>Event Name *</label>
@@ -98,6 +151,36 @@ export default function NewEventPage() {
           />
           <p className={hintCls}>Maximum number of people allowed in</p>
         </div>
+
+        {/* Open event specific fields */}
+        {eventType === 'open' && (
+          <div className="flex flex-col gap-4 border-2 border-signal/20 bg-signal/5 p-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-signal font-bold">
+              OPEN EVENT SETTINGS
+            </p>
+
+            <div className="flex flex-col gap-2">
+              <label htmlFor="new-ev-max-reg" className={labelCls}>Max Registrations</label>
+              <input
+                id="new-ev-max-reg"
+                name="max_registrations"
+                type="number"
+                min="1"
+                placeholder="Leave empty for unlimited"
+                className={fieldCls}
+              />
+              <p className={hintCls}>Cap on how many people can sign up (leave empty for no limit)</p>
+            </div>
+
+            <div className="border-l-4 border-signal/40 pl-3">
+              <p className="font-mono text-[9px] text-foreground/60 uppercase tracking-wide leading-relaxed">
+                When published, a unique registration link will be generated.
+                Share it publicly — users can register without creating an account.
+                You'll review and manually accept or reject each registration.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-2">
           <label htmlFor="new-ev-desc" className={labelCls}>Description</label>

@@ -1,3 +1,4 @@
+import { Globe } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface EventCardProps {
@@ -7,6 +8,7 @@ interface EventCardProps {
   guestCount: number
   capacity: number
   status: "OPEN" | "CLOSED" | "LIVE" | "PUBLISHED" | "DRAFT"
+  eventType?: "closed" | "open"
   className?: string
 }
 
@@ -17,6 +19,7 @@ export function EventCard({
   guestCount,
   capacity,
   status,
+  eventType = 'closed',
   className,
 }: EventCardProps) {
   const percentage = Math.min((guestCount / capacity) * 100, 100)
@@ -47,6 +50,12 @@ export function EventCard({
             <h2 className="font-display text-4xl md:text-5xl uppercase leading-[0.8] tracking-tighter text-foreground">
               {name}
             </h2>
+            {eventType === 'open' && (
+              <span className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest px-2 py-1 border border-signal/40 text-signal shrink-0 ml-3">
+                <Globe className="h-3 w-3" />
+                OPEN
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 mt-2">
             <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-foreground/80 border border-foreground/40 px-2 py-0.5">
