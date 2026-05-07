@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
-const tabs = [
+const baseTabs = [
   { label: 'Overview', href: '' },
   { label: 'Guests', href: '/guests' },
   { label: 'Entry Cards', href: '/cards' },
@@ -30,13 +30,20 @@ export default async function EventLayout({
 
   const { data: event } = await supabase
     .from('events')
-    .select('id, name, date, status')
+    .select('id, name, date, status, event_type')
     .eq('id', id)
     .single()
 
   if (!event) notFound()
 
   const statusInfo = statusMap[event.status] ?? { label: event.status.toUpperCase(), cls: '' }
+
+  // Build tabs based on event type
+  const tabs = [...baseTabs]
+  if (event.event_type === 'open') {
+    // Insert Registrations tab after Overview
+    tabs.splice(1, 0, { label: 'Registrations', href: '/registrations' })
+  }
 
   return (
     <div>
@@ -52,14 +59,23 @@ export default async function EventLayout({
       {/* Event heading */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 border-b-2 border-foreground/20 pb-8">
         <div>
-          <h1 className="font-display text-5xl md:text-6xl uppercase leading-none tracking-tighter text-foreground">
-            {event.name}
-          </h1>
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-foreground/70 mt-2">
-            {new Date(event.date).toLocaleDateString('en-GB', {
-              weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-            })}
-          </p>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="font-display text-5xl md:text-6xl uppercase leading-none tracking-tighter text-foreground">
+              {event.name}
+            </h1>
+          </div>
+          <div className="flex items-center gap-3 mt-2">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-foreground/70">
+              {new Date(event.date).toLocaleDateString('en-GB', {
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+              })}
+            </p>
+            {event.event_type === 'open' && (
+              <span className="font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 border border-signal/40 text-signal">
+                OPEN EVENT
+              </span>
+            )}
+          </div>
         </div>
 
         <div
@@ -98,3 +114,4 @@ export default async function EventLayout({
     </div>
   )
 }
+

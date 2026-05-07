@@ -102,6 +102,7 @@ export function EventsDashboardClient({
                           time={event.time?.slice(0, 5) ?? "N/A"}
                           guestCount={s.checkedIn}
                           capacity={event.capacity || 0}
+                          eventType={event.event_type || 'closed'}
                           status={
                             event.status === "live" ? "LIVE" : 
                             event.status === "published" ? "PUBLISHED" : 

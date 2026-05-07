@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useRef, useTransition } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Pencil, Trash2, Save, X } from 'lucide-react'
+import { Pencil, Trash2, Save, X, Copy, Lock, Globe, Mail, Send } from 'lucide-react'
 import { updateEvent, deleteEvent } from '@/app/actions/events'
+import { sendReminderEmails } from '@/app/actions/registrations'
 import { Button } from '@/components/ui/button'
 import { DeleteEventDialog } from '@/components/delete-event-dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
 import { fieldCls, labelCls } from '@/lib/form-styles'
+import { toast } from 'sonner'
 import type { Event } from '@/lib/types'
 
 export default function EventOverviewPage() {
@@ -19,24 +22,52 @@ export default function EventOverviewPage() {
   const [error, setError] = useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [editEventType, setEditEventType] = useState<'closed' | 'open'>('closed')
   const isSubmitting = useRef(false)
+
+  // Reminder dialog state
+  const [reminderOpen, setReminderOpen] = useState(false)
+  const [reminderMessage, setReminderMessage] = useState('')
+  const [sendingReminder, setSendingReminder] = useState(false)
+
+  // Registration counts for open events
+  const [regCounts, setRegCounts] = useState({ pending: 0, accepted: 0, rejected: 0 })
 
   useEffect(() => {
     const supabase = createClient()
 
     async function loadEvent() {
       const { data } = await supabase.from('events').select('*').eq('id', id).single()
-      if (data) setEvent(data)
+      if (data) {
+        setEvent(data)
+        setEditEventType(data.event_type || 'closed')
+      }
+    }
+
+    async function loadRegCounts() {
+      const { data } = await supabase
+        .from('registrations')
+        .select('status')
+        .eq('event_id', id)
+      if (data) {
+        setRegCounts({
+          pending: data.filter(r => r.status === 'pending').length,
+          accepted: data.filter(r => r.status === 'accepted').length,
+          rejected: data.filter(r => r.status === 'rejected').length,
+        })
+      }
     }
 
     loadEvent()
+    loadRegCounts()
 
     // Poll every 10s — guarantees status badge updates without Supabase Realtime
-    const poll = setInterval(loadEvent, 10000)
+    const poll = setInterval(() => { loadEvent(); loadRegCounts() }, 10000)
 
     const channel = supabase
       .channel(`event-detail-${id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${id}` }, () => loadEvent())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations', filter: `event_id=eq.${id}` }, () => loadRegCounts())
       .subscribe()
 
     return () => {
@@ -70,6 +101,25 @@ export default function EventOverviewPage() {
     setDeleteOpen(true)
   }
 
+  function copyRegistrationLink() {
+    if (!event?.registration_slug) return
+    navigator.clipboard.writeText(`${window.location.origin}/register/${event.registration_slug}`)
+    toast.success('Registration link copied')
+  }
+
+  async function handleSendReminder() {
+    setSendingReminder(true)
+    const result = await sendReminderEmails(id, reminderMessage)
+    if (result?.error) {
+      toast.error(result.error)
+    } else {
+      toast.success(`Reminder sent to ${result.count} guests`)
+      setReminderOpen(false)
+      setReminderMessage('')
+    }
+    setSendingReminder(false)
+  }
+
   const statusColors: Record<string, string> = {
     live:      'status-admitted',
     published: 'status-pending',
@@ -91,6 +141,41 @@ export default function EventOverviewPage() {
               ⚠ {error}
             </div>
           )}
+
+          {/* Event Type */}
+          <div className="flex flex-col gap-2">
+            <span className={labelCls}>Event Type</span>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setEditEventType('closed')}
+                className={`flex items-center gap-3 p-3 border-2 transition-all ${
+                  editEventType === 'closed'
+                    ? 'border-signal bg-signal/10 text-foreground'
+                    : 'border-foreground/20 text-foreground/60 hover:border-foreground/40'
+                }`}
+              >
+                <Lock className={`h-4 w-4 shrink-0 ${editEventType === 'closed' ? 'text-signal' : ''}`} />
+                <span className="font-display text-lg uppercase leading-none">Closed</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditEventType('open')}
+                className={`flex items-center gap-3 p-3 border-2 transition-all ${
+                  editEventType === 'open'
+                    ? 'border-signal bg-signal/10 text-foreground'
+                    : 'border-foreground/20 text-foreground/60 hover:border-foreground/40'
+                }`}
+              >
+                <Globe className={`h-4 w-4 shrink-0 ${editEventType === 'open' ? 'text-signal' : ''}`} />
+                <span className="font-display text-lg uppercase leading-none">Open</span>
+              </button>
+            </div>
+            <input type="hidden" name="event_type" value={editEventType} />
+            {event.registration_slug && editEventType === 'open' && (
+              <input type="hidden" name="registration_slug" value={event.registration_slug} />
+            )}
+          </div>
 
           <div className="flex flex-col gap-2">
             <label htmlFor="ev-name" className={labelCls}>Event Name *</label>
@@ -117,6 +202,21 @@ export default function EventOverviewPage() {
             <label htmlFor="ev-capacity" className={labelCls}>Capacity</label>
             <input id="ev-capacity" name="capacity" type="number" min="1" defaultValue={event.capacity ?? ''} className={fieldCls} />
           </div>
+
+          {editEventType === 'open' && (
+            <div className="flex flex-col gap-2">
+              <label htmlFor="ev-max-reg" className={labelCls}>Max Registrations</label>
+              <input
+                id="ev-max-reg"
+                name="max_registrations"
+                type="number"
+                min="1"
+                defaultValue={event.max_registrations ?? ''}
+                placeholder="Leave empty for unlimited"
+                className={fieldCls}
+              />
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <label htmlFor="ev-status" className={labelCls}>Status</label>
@@ -169,6 +269,15 @@ export default function EventOverviewPage() {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => setReminderOpen(true)}
+              className="gap-2 font-mono text-xs uppercase tracking-widest text-foreground/70 hover:text-foreground border border-foreground/20 hover:border-foreground/50 h-9 px-4"
+            >
+              <Mail className="h-3.5 w-3.5" aria-hidden="true" />
+              Remind
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setEditing(true)}
               className="gap-2 font-mono text-xs uppercase tracking-widest text-foreground/70 hover:text-foreground border border-foreground/20 hover:border-foreground/50 h-9 px-4"
             >
@@ -191,6 +300,17 @@ export default function EventOverviewPage() {
         {/* Data rows */}
         <dl className="flex flex-col gap-6">
           <Row label="EVENT_NAME" value={<span className="font-display text-3xl text-foreground uppercase">{event.name}</span>} />
+          <Row
+            label="EVENT_TYPE"
+            value={
+              <span className="inline-flex items-center gap-2">
+                {event.event_type === 'open' ? <Globe className="h-4 w-4 text-signal" /> : <Lock className="h-4 w-4 text-foreground/60" />}
+                <span className={`font-display text-lg uppercase ${event.event_type === 'open' ? 'text-signal' : ''}`}>
+                  {event.event_type}
+                </span>
+              </span>
+            }
+          />
           <Row label="DATE" value={new Date(event.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()} />
           {event.time && <Row label="TIME" value={event.time.slice(0, 5)} />}
           <Row label="VENUE" value={event.venue} />
@@ -210,6 +330,49 @@ export default function EventOverviewPage() {
         </dl>
       </div>
 
+      {/* Registration link for open events */}
+      {event.event_type === 'open' && event.registration_slug && (
+        <div className="brutalist-card">
+          <div className="flex items-center justify-between mb-4 pb-4 border-b-2 border-foreground/10">
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal">REGISTRATION_LINK</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={copyRegistrationLink}
+              className="gap-2 font-mono text-[10px] uppercase tracking-widest text-foreground/50 hover:text-foreground border border-foreground/10 hover:border-foreground/30 h-8 px-3"
+            >
+              <Copy className="h-3 w-3" />
+              COPY
+            </Button>
+          </div>
+          <p className="font-mono text-xs text-foreground/70 break-all mb-4">
+            {typeof window !== 'undefined' && `${window.location.origin}/register/${event.registration_slug}`}
+          </p>
+
+          {/* Registration stats */}
+          <div className="grid grid-cols-3 gap-px bg-foreground/10">
+            <div className="bg-background p-3 text-center">
+              <p className="font-display text-2xl text-signal">{regCounts.pending}</p>
+              <p className="font-mono text-[9px] uppercase tracking-widest text-foreground/50">Pending</p>
+            </div>
+            <div className="bg-background p-3 text-center">
+              <p className="font-display text-2xl text-admitted">{regCounts.accepted}</p>
+              <p className="font-mono text-[9px] uppercase tracking-widest text-foreground/50">Accepted</p>
+            </div>
+            <div className="bg-background p-3 text-center">
+              <p className="font-display text-2xl text-denied">{regCounts.rejected}</p>
+              <p className="font-mono text-[9px] uppercase tracking-widest text-foreground/50">Rejected</p>
+            </div>
+          </div>
+
+          {event.max_registrations && (
+            <p className="font-mono text-[10px] text-foreground/40 uppercase tracking-widest mt-3">
+              Registration cap: {event.max_registrations} total
+            </p>
+          )}
+        </div>
+      )}
+
       {/* ── Delete Confirmation Dialog ── */}
       <DeleteEventDialog
         open={deleteOpen}
@@ -223,6 +386,42 @@ export default function EventOverviewPage() {
           })
         }}
       />
+
+      {/* ── Reminder Dialog ── */}
+      <Dialog open={reminderOpen} onOpenChange={setReminderOpen}>
+        <DialogContent className="bg-background border-2 border-foreground/20 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-3xl uppercase text-foreground">Send Reminder</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-5 mt-2">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-foreground/60 leading-relaxed">
+              Send a reminder email with event details and QR entry pass to all confirmed guests.
+            </p>
+
+            <div className="flex flex-col gap-2">
+              <label htmlFor="overview-reminder-msg" className={labelCls}>Custom Message (optional)</label>
+              <textarea
+                id="overview-reminder-msg"
+                value={reminderMessage}
+                onChange={(e) => setReminderMessage(e.target.value)}
+                placeholder="e.g. We can't wait to see you! Remember to arrive by 4pm..."
+                rows={4}
+                className={`${fieldCls} resize-none`}
+              />
+            </div>
+
+            <Button
+              variant="signal"
+              className="w-full h-12 text-sm gap-2"
+              disabled={sendingReminder}
+              onClick={handleSendReminder}
+            >
+              <Send className="h-4 w-4" />
+              {sendingReminder ? 'SENDING...' : 'SEND REMINDERS →'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
