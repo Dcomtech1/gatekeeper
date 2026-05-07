@@ -150,7 +150,7 @@ export default function RegistrationsPage() {
           {/* Send Reminder */}
           <Button
             variant="ghost"
-            className="gap-2 h-12 px-5 text-sm font-mono text-xs uppercase tracking-widest text-foreground/70 hover:text-foreground border border-foreground/20 hover:border-foreground/50"
+            className="gap-2 h-12 px-5 text-sm font-mono uppercase tracking-widest text-foreground/70 hover:text-foreground border border-foreground/20 hover:border-foreground/50"
             onClick={() => setReminderOpen(true)}
           >
             <Mail className="h-4 w-4" />

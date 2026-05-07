@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
-import QRCode from 'qrcode'
 
 // Lazy init — avoids crash at build time when env var isn't set yet
 let _resend: Resend | null = null
@@ -41,15 +40,10 @@ async function handleInvitation({
 }) {
   const supabase = createAdminClient()
 
-  // Generate QR code as base64
-  const qrDataUrl = await QRCode.toDataURL(invitationId, {
-    width: 400,
-    margin: 2,
-    color: { dark: '#0A0A0A', light: '#F0EDE8' },
-  })
+  // Generate QR code URL using a hosted API (robust for emails)
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${invitationId}&color=0A0A0A&bgcolor=F0EDE8`;
 
-  // Convert data URL to buffer for attachment
-  const qrBase64 = qrDataUrl.replace(/^data:image\/png;base64,/, '')
+
 
   const eventDate = new Date(event.date).toLocaleDateString('en-GB', {
     weekday: 'long',
@@ -111,7 +105,7 @@ async function handleInvitation({
         YOUR ENTRY PASS — SCAN AT THE GATE
       </p>
       <div style="display:inline-block;border:2px solid rgba(240,237,232,0.3);padding:8px;background:#F0EDE8;">
-        <img src="cid:qrcode" alt="Entry QR Code" width="200" height="200" style="display:block;" />
+        <img src="${qrUrl}" alt="Entry QR Code" width="200" height="200" style="display:block;" />
       </div>
       <p style="font-size:10px;letter-spacing:2px;color:rgba(240,237,232,0.4);margin:16px 0 0 0;text-transform:uppercase;">
         This QR code is unique to you. Do not share it.
@@ -134,15 +128,7 @@ async function handleInvitation({
       to: recipientEmail,
       subject: `You're confirmed — ${event.name}`,
       html,
-      attachments: [
-        {
-          filename: 'entry-pass.png',
-          content: qrBase64,
-          contentType: 'image/png',
-          headers: { 'Content-ID': '<qrcode>' },
-        },
-      ],
-    } as any)
+    })
 
     if (sendError) {
       console.error('Resend error:', sendError)
@@ -188,13 +174,9 @@ async function handleReminder({
   const errors: string[] = []
 
   for (const recipient of recipients) {
-    // Generate QR for each recipient
-    const qrDataUrl = await QRCode.toDataURL(recipient.invitationId, {
-      width: 400,
-      margin: 2,
-      color: { dark: '#0A0A0A', light: '#F0EDE8' },
-    })
-    const qrBase64 = qrDataUrl.replace(/^data:image\/png;base64,/, '')
+    // Generate QR code URL using a hosted API (robust for emails)
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${recipient.invitationId}&color=0A0A0A&bgcolor=F0EDE8`;
+
 
     const html = `
 <!DOCTYPE html>
@@ -247,7 +229,7 @@ async function handleReminder({
         YOUR ENTRY PASS
       </p>
       <div style="display:inline-block;border:2px solid rgba(240,237,232,0.3);padding:8px;background:#F0EDE8;">
-        <img src="cid:qrcode" alt="Entry QR Code" width="200" height="200" style="display:block;" />
+        <img src="${qrUrl}" alt="Entry QR Code" width="200" height="200" style="display:block;" />
       </div>
     </div>
 
@@ -267,15 +249,7 @@ async function handleReminder({
         to: recipient.email,
         subject: `Reminder — ${event.name}`,
         html,
-        attachments: [
-          {
-            filename: 'entry-pass.png',
-            content: qrBase64,
-            contentType: 'image/png',
-            headers: { 'Content-ID': '<qrcode>' },
-          },
-        ],
-      } as any)
+      })
 
       if (sendError) {
         errors.push(`${recipient.email}: ${sendError}`)
