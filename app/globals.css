@@ -5,18 +5,19 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-void: #0A0A0A;
-  --color-paper: #F0EDE8;
-  --color-ink: #111111;
-  --color-signal: #FFD600;
-  --color-denied: #FF2B2B;
-  --color-admitted: #00FF6A;
+  --color-void: #141210;
+  --color-paper: #E8E4DC;
+  --color-ink: #252220;
+  --color-accent: #C84630;
+  --color-denied: #C84630;
+  --color-admitted: #4A9B5E;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-mono);
+  --font-sans: var(--font-body);
   --font-display: var(--font-display);
   --font-mono: var(--font-mono);
+  --font-body: var(--font-body);
 
   --radius-sm: 0px;
   --radius-md: 0px;
@@ -40,7 +41,7 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
+  --color-signal: var(--color-accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -55,26 +56,25 @@
 
 :root, .dark {
   --radius: 0px;
-  --border-brutal: 2px solid var(--color-ink);
 
   --background: var(--color-void);
   --foreground: var(--color-paper);
-  --card: var(--color-void);
+  --card: var(--color-ink);
   --card-foreground: var(--color-paper);
-  --popover: var(--color-void);
+  --popover: var(--color-ink);
   --popover-foreground: var(--color-paper);
   --primary: var(--color-paper);
   --primary-foreground: var(--color-void);
   --secondary: var(--color-ink);
   --secondary-foreground: var(--color-paper);
   --muted: var(--color-ink);
-  --muted-foreground: var(--color-paper);
-  --accent: var(--color-signal);
-  --accent-foreground: var(--color-void);
+  --muted-foreground: #9B9689;
+  --accent: var(--color-accent);
+  --accent-foreground: #FFFFFF;
   --destructive: var(--color-denied);
-  --border: var(--color-ink);
-  --input: var(--color-ink);
-  --ring: var(--color-signal);
+  --border: #2F2C28;
+  --input: #2F2C28;
+  --ring: var(--color-accent);
 
   --sidebar: var(--color-void);
   --sidebar-foreground: var(--color-paper);
@@ -82,44 +82,42 @@
   --sidebar-primary-foreground: var(--color-void);
   --sidebar-accent: var(--color-ink);
   --sidebar-accent-foreground: var(--color-paper);
-  --sidebar-border: var(--color-ink);
-  --sidebar-ring: var(--color-signal);
+  --sidebar-border: #2F2C28;
+  --sidebar-ring: var(--color-accent);
 
-  --scrollbar-thumb: rgba(240, 237, 232, 0.15);
+  --scrollbar-thumb: #2F2C28;
 }
 
 .light {
-  --background: var(--color-paper);
-  --foreground: var(--color-void);
-  --card: var(--color-paper);
-  --card-foreground: var(--color-void);
-  --popover: var(--color-paper);
-  --popover-foreground: var(--color-void);
-  --primary: var(--color-void);
-  --primary-foreground: var(--color-paper);
-  --secondary: rgba(0, 0, 0, 0.08);
-  --secondary-foreground: var(--color-void);
-  --muted: rgba(0, 0, 0, 0.08);
-  --muted-foreground: rgba(0, 0, 0, 0.8);
-  --accent: var(--color-signal);
-  --accent-foreground: var(--color-void);
+  --background: #FAFAF6;
+  --foreground: #141210;
+  --card: #F0EDE6;
+  --card-foreground: #141210;
+  --popover: #F0EDE6;
+  --popover-foreground: #141210;
+  --primary: #141210;
+  --primary-foreground: #FAFAF6;
+  --secondary: #ECEAE3;
+  --secondary-foreground: #141210;
+  --muted: #ECEAE3;
+  --muted-foreground: #5C5751;
+  --accent: var(--color-accent);
+  --accent-foreground: #FFFFFF;
   --destructive: var(--color-denied);
-  --border: var(--color-void);
-  --input: var(--color-void);
-  --ring: var(--color-signal);
-  
-  --border-brutal: 2px solid var(--color-void);
+  --border: #D6D2CA;
+  --input: #D6D2CA;
+  --ring: var(--color-accent);
 
-  --sidebar: var(--color-paper);
-  --sidebar-foreground: var(--color-void);
-  --sidebar-primary: var(--color-void);
-  --sidebar-primary-foreground: var(--color-paper);
-  --sidebar-accent: rgba(0, 0, 0, 0.05);
-  --sidebar-accent-foreground: var(--color-void);
-  --sidebar-border: var(--color-void);
-  --sidebar-ring: var(--color-signal);
+  --sidebar: #FAFAF6;
+  --sidebar-foreground: #141210;
+  --sidebar-primary: #141210;
+  --sidebar-primary-foreground: #FAFAF6;
+  --sidebar-accent: #ECEAE3;
+  --sidebar-accent-foreground: #141210;
+  --sidebar-border: #D6D2CA;
+  --sidebar-ring: var(--color-accent);
 
-  --scrollbar-thumb: rgba(0, 0, 0, 0.1);
+  --scrollbar-thumb: #D6D2CA;
 }
 
 @layer base {
@@ -128,16 +126,19 @@
   }
   
   *:focus-visible {
-    outline: 2px solid var(--color-signal) !important;
-    outline-offset: 0px !important;
+    outline: 2px solid var(--color-accent) !important;
+    outline-offset: 2px !important;
   }
 
   body {
-    @apply bg-background text-foreground font-mono;
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
 
   /* Ensure native select options are readable in all browsers */
@@ -148,8 +149,8 @@
 
   /* Accessible scrollbar */
   ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 3px;
+    height: 3px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
@@ -158,35 +159,71 @@
     background: var(--scrollbar-thumb);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-signal);
+    background: var(--color-accent);
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: #fff;
   }
 }
 
 @layer utilities {
-  .brutalist-card {
-    border: var(--border-brutal);
-    background: transparent;
+  /* ─── The Crenelle ─── 
+     Castle battlement pattern — the brand's signature motif.
+     Merlons (raised blocks) with crenels (gaps) between them.
+  */
+  .crenelle-divider {
+    width: 100%;
+    height: 6px;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        var(--color-accent) 0 8px,
+        transparent 8px 14px
+      ) top / 100% 4px no-repeat,
+      linear-gradient(
+        var(--color-accent), var(--color-accent)
+      ) bottom / 100% 2px no-repeat;
+  }
+
+  .crenelle-divider-subtle {
+    width: 100%;
+    height: 5px;
+    opacity: 0.25;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        var(--foreground) 0 6px,
+        transparent 6px 11px
+      ) top / 100% 3px no-repeat,
+      linear-gradient(
+        var(--foreground), var(--foreground)
+      ) bottom / 100% 2px no-repeat;
+  }
+
+  .brutalist-card,
+  .crenelle-card {
+    border: 1px solid var(--border);
+    background: var(--card);
     padding: 1.5rem;
-    box-shadow: none;
-    border-radius: 0px;
   }
 
   .status-admitted {
     background-color: var(--color-admitted);
-    color: var(--color-void);
+    color: #fff;
   }
 
   .status-denied {
     background-color: var(--color-denied);
-    color: var(--color-paper);
+    color: #fff;
   }
 
   .status-pending {
-    background-color: var(--color-signal);
-    color: var(--color-void);
+    background-color: var(--primary);
+    color: var(--primary-foreground);
   }
 
-  /* Text color shortcuts for status accent text */
   .text-admitted {
     color: var(--color-admitted);
   }
@@ -216,9 +253,8 @@
     animation: marquee 30s linear infinite;
   }
 
-  /* Brutalist dialog overlay — darker for contrast */
   [data-radix-dialog-overlay] {
-    background-color: rgba(10, 10, 10, 0.85) !important;
+    background-color: rgba(20, 18, 16, 0.9) !important;
   }
 }
 

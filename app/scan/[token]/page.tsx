@@ -41,16 +41,17 @@ export default async function ScannerPage({ params }: { params: Promise<{ token:
       <div className="min-h-screen flex items-center justify-center bg-void p-6">
         <div className="text-center text-paper max-w-sm">
           <p className="font-display text-8xl mb-6 opacity-40">⏳</p>
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal mb-2">STANDBY_MODE</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-paper/40 mb-2">STANDBY_MODE</p>
           <h1 className="font-display text-4xl uppercase text-paper leading-none mb-4">Not Yet Open</h1>
           <p className="font-mono text-xs text-paper/50 uppercase tracking-wide leading-relaxed">
             Scanning for{' '}
             <span className="text-paper/80">{event?.name}</span>{' '}
             has not opened yet. The organiser will set the event to{' '}
-            <span className="text-signal">LIVE</span> when admission begins.
+            <span className="text-paper font-bold uppercase">LIVE</span> when admission begins.
           </p>
-          <div className="mt-8 border border-signal/20 bg-signal/5 px-4 py-3">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-signal/70">
+          <div className="mt-8 border border-paper/10 bg-paper/5 px-4 py-3">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-paper/40">
+              <span className="font-mono text-[9px] uppercase tracking-widest bg-paper/10 text-paper px-2 py-1 mr-2">LIVE</span>
               Stand by — this page will work once the event goes live.
             </p>
           </div>

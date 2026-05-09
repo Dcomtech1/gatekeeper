@@ -10,6 +10,7 @@ interface EventCardProps {
   status: "OPEN" | "CLOSED" | "LIVE" | "PUBLISHED" | "DRAFT"
   eventType?: "closed" | "open"
   className?: string
+  onStatusClick?: (e: React.MouseEvent) => void
 }
 
 export function EventCard({
@@ -21,109 +22,112 @@ export function EventCard({
   status,
   eventType = 'closed',
   className,
+  onStatusClick,
 }: EventCardProps) {
   const percentage = Math.min((guestCount / capacity) * 100, 100)
 
   const statusColors: Record<string, string> = {
-    LIVE:      "bg-admitted text-void",
-    PUBLISHED: "bg-signal text-void",
-    DRAFT:     "bg-foreground/15 text-foreground/60",
-    OPEN:      "bg-signal text-void",
-    CLOSED:    "bg-denied text-void",
+    LIVE:      "bg-admitted text-white",
+    PUBLISHED: "bg-primary text-primary-foreground",
+    DRAFT:     "bg-secondary text-muted-foreground",
+    OPEN:      "bg-primary text-primary-foreground",
+    CLOSED:    "bg-denied text-white",
   }
 
   return (
     <div
       className={cn(
-        "relative w-full border-2 border-foreground bg-background flex overflow-hidden rounded-none",
+        "relative w-full border border-border bg-background flex overflow-hidden",
         className
       )}
     >
-      {/* Physical Boarding Pass Left Edge */}
-      <div className="w-2 md:w-3 bg-signal shrink-0" />
+      {/* Left accent edge */}
+      <div className="w-1 bg-accent shrink-0" />
 
-      {/* Main Stub Content */}
-      <div className="flex-1 flex flex-col divide-y-2 divide-foreground/20">
-        {/* Top Section: Event Identity */}
+      {/* Main content */}
+      <div className="flex-1 flex flex-col">
+        {/* Top: Event Identity */}
         <div className="p-5 flex flex-col gap-1">
-          <div className="flex justify-between items-start">
-            <h2 className="font-display text-4xl md:text-5xl uppercase leading-[0.8] tracking-tighter text-foreground">
+          <div className="flex items-start gap-3">
+            <h2 className="font-display text-2xl md:text-3xl uppercase font-medium tracking-tight text-foreground shrink-0">
               {name}
             </h2>
             {eventType === 'open' && (
-              <span className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest px-2 py-1 border border-signal/40 text-signal shrink-0 ml-3">
-                <Globe className="h-3 w-3" />
+              <span className="flex items-center gap-1 font-mono text-[8px] uppercase tracking-widest px-2 py-0.5 border border-accent text-accent mt-1.5">
+                <Globe className="h-2.5 w-2.5" />
                 OPEN
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-foreground/80 border border-foreground/40 px-2 py-0.5">
-              MANIFEST NO. {name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 9000 + 1000}
-            </span>
-            <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-foreground/80">
-              {date} // {time}
+          <div className="flex items-center gap-2 mt-1">
+            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-muted-foreground">
+              {date} — {time}
             </span>
           </div>
         </div>
 
-        {/* Middle: The Tear Line */}
-        <div className="relative py-3 px-5 bg-background flex items-center">
-          <div className="border-t-2 border-dashed border-foreground/30 w-full h-0" />
-          <div className="absolute -left-1 w-2 h-2 bg-foreground rotate-45" />
-          <div className="absolute -right-1 w-2 h-2 bg-foreground rotate-45" />
-        </div>
+        {/* Divider */}
+        <div className="h-px bg-border mx-5" />
 
-        {/* Bottom Strip: Metrics & Status */}
-        <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-8">
-            {/* Guest Metrics */}
+        {/* Bottom: Metrics & Status */}
+        <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="flex items-center gap-6">
+            {/* Guest count */}
             <div className="flex flex-col">
-              <span className="font-mono text-[10px] uppercase text-foreground/70 mb-1">
-                GUEST_COUNT
+              <span className="font-mono text-[8px] uppercase text-muted-foreground mb-0.5 tracking-wider">
+                Guests
               </span>
               <div className="flex items-baseline gap-1">
-                <span className="font-display text-3xl text-foreground leading-none">
+                <span className="font-display text-2xl text-foreground font-medium leading-none">
                   {guestCount.toString().padStart(3, "0")}
                 </span>
-                <span className="font-mono text-xs text-foreground/60">
+                <span className="font-mono text-[10px] text-muted-foreground">
                   / {capacity}
                 </span>
               </div>
             </div>
 
-            {/* Capacity Visualizer */}
-            <div className="flex flex-col gap-1.5 flex-1 min-w-30">
-              <span className="font-mono text-[10px] uppercase text-foreground/70">
-                CAPACITY_LOAD
+            {/* Capacity bar */}
+            <div className="flex flex-col gap-1 flex-1 min-w-24">
+              <span className="font-mono text-[8px] uppercase text-muted-foreground tracking-wider">
+                Capacity
               </span>
-              <div className="w-full h-5 border-2 border-foreground/40 bg-background relative p-0.5">
+              <div className="w-full h-2 bg-secondary relative">
                 <div
-                  className="h-full bg-signal transition-all duration-500"
+                  className="h-full bg-accent transition-all duration-500"
                   style={{ width: `${percentage}%` }}
                 />
               </div>
             </div>
           </div>
 
-          {/* Status Badge */}
-          <div
+          {/* Status */}
+          <button
+            onClick={(e) => {
+              if (onStatusClick) {
+                e.preventDefault()
+                e.stopPropagation()
+                onStatusClick(e)
+              }
+            }}
+            disabled={!onStatusClick}
             className={cn(
-              "font-display text-2xl px-6 py-2 leading-none inline-flex items-center justify-center uppercase",
-              statusColors[status]
+              "font-display text-xs font-medium px-4 py-1.5 leading-none inline-flex items-center justify-center uppercase tracking-wider transition-all",
+              statusColors[status],
+              onStatusClick ? "cursor-pointer hover:ring-1 hover:ring-white/50" : "cursor-default"
             )}
           >
             {status}
-          </div>
+          </button>
         </div>
 
-        {/* Fine Print Footer (Ledger Style) */}
-        <div className="px-5 py-2 flex justify-between border-t border-foreground/20">
-          <span className="font-mono text-[8px] uppercase text-foreground/50">
-            GATEKEEP_ENTRY_SYSTEM // ENCRYPTION_ACTIVE
+        {/* Footer */}
+        <div className="px-5 py-1.5 flex justify-between border-t border-border">
+          <span className="font-mono text-[7px] uppercase text-muted-foreground tracking-wider">
+            CRENELLE_ACCESS // VERIFIED
           </span>
-          <span className="font-mono text-[8px] uppercase text-foreground/50">
-            © 2026_GATEKEEP_CORP
+          <span className="font-mono text-[7px] uppercase text-muted-foreground tracking-wider">
+            © 2026 CRENELLE
           </span>
         </div>
       </div>

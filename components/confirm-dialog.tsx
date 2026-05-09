@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { cn } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string
   isPending?: boolean
   onConfirm: () => void
+  variant?: 'danger' | 'accent'
 }
 
 export function ConfirmDialog({
@@ -41,15 +43,16 @@ export function ConfirmDialog({
   confirmLabel = 'CONFIRM',
   isPending = false,
   onConfirm,
+  variant = 'danger',
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="border-2 border-foreground rounded-none bg-background max-w-md p-0 gap-0"
+        className="border border-border bg-background max-w-md p-0 gap-0"
       >
-        {/* Red accent strip */}
-        <div className="h-2 bg-denied w-full" />
+        {/* Accent strip */}
+        <div className={cn("h-1.5 w-full", variant === 'danger' ? "bg-denied" : "bg-accent")} />
 
         <div className="p-8">
           <DialogHeader className="mb-6">
@@ -62,11 +65,11 @@ export function ConfirmDialog({
           </DialogHeader>
 
           {subject && (
-            <div className="border-2 border-foreground/20 p-4 mb-6 bg-secondary">
-              <p className="font-mono text-xs uppercase text-foreground/50 mb-1 tracking-widest">
+            <div className="border border-border p-4 mb-6 bg-secondary">
+              <p className="font-mono text-[9px] uppercase text-muted-foreground mb-1 tracking-widest">
                 {subjectLabel}
               </p>
-              <p className="font-display text-2xl uppercase text-foreground leading-tight">
+              <p className="font-display text-xl uppercase text-foreground leading-tight font-medium">
                 {subject}
               </p>
             </div>
@@ -83,7 +86,7 @@ export function ConfirmDialog({
               </Button>
             </DialogClose>
             <Button
-              variant="danger"
+              variant={variant === 'danger' ? 'danger' : 'signal'}
               size="default"
               disabled={isPending}
               className="flex-1"

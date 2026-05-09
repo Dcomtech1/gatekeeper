@@ -164,13 +164,13 @@ export default function ScannerClient({
   }, [])
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-void text-paper overflow-hidden select-none">
+    <div className="fixed inset-0 flex flex-col bg-[#141210] text-[#E8E4DC] overflow-hidden select-none">
       {/* Top Bar */}
-      <header className="p-6 pt-10 shrink-0 border-b-2 border-ink">
-        <h1 className="font-display text-4xl tracking-[0.3em] leading-none text-paper uppercase">
-          GATEKEEP
+      <header className="p-6 pt-10 shrink-0 border-b border-[#2F2C28]">
+        <h1 className="font-display text-2xl tracking-[0.2em] leading-none uppercase font-medium">
+          CRENELLE
         </h1>
-        <p className="font-mono text-xs text-paper/40 uppercase mt-2 tracking-widest">
+        <p className="font-mono text-[10px] text-[#9B9689] uppercase mt-2 tracking-widest">
           {eventName} // {gate}
         </p>
       </header>
@@ -178,17 +178,17 @@ export default function ScannerClient({
       {/* Camera Viewport */}
       <main className="flex-1 relative flex items-center justify-center bg-void">
         <div className="relative w-72 h-72">
-          {/* Brutalist Corner Brackets */}
-          <div className="absolute -top-1 -left-1 w-6 h-6 border-t-[3px] border-l-[3px] border-signal z-20" />
-          <div className="absolute -top-1 -right-1 w-6 h-6 border-t-[3px] border-r-[3px] border-signal z-20" />
-          <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-[3px] border-l-[3px] border-signal z-20" />
-          <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-[3px] border-r-[3px] border-signal z-20" />
+          {/* Corner Brackets */}
+          <div className="absolute -top-1 -left-1 w-5 h-5 border-t-2 border-l-2 border-[#C84630] z-20" />
+          <div className="absolute -top-1 -right-1 w-5 h-5 border-t-2 border-r-2 border-[#C84630] z-20" />
+          <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-2 border-l-2 border-[#C84630] z-20" />
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-2 border-r-2 border-[#C84630] z-20" />
           
           {/* QR Reader Surface */}
           <div id="qr-reader" className="w-full h-full overflow-hidden grayscale contrast-125 opacity-60" />
           
           {!scanning && !processing && (
-            <div className="absolute inset-0 flex items-center justify-center bg-void/80 z-10">
+            <div className="absolute inset-0 flex items-center justify-center bg-[#141210]/80 z-10">
               <Button variant="signal" onClick={startScanner}>INITIALIZE CAMERA</Button>
             </div>
           )}
@@ -197,12 +197,12 @@ export default function ScannerClient({
 
       {/* Party Size Selector Overlay */}
       {pendingSelection && (
-        <div className="absolute inset-x-0 bottom-0 z-50 bg-void border-t-4 border-signal p-6 animate-in slide-in-from-bottom duration-150">
+        <div className="absolute inset-x-0 bottom-0 z-50 bg-[#141210] border-t-2 border-[#C84630] p-6 animate-in slide-in-from-bottom duration-150">
           <div className="flex flex-col gap-4">
             <header className="text-center">
-              <p className="font-mono text-[10px] uppercase text-signal tracking-[0.2em] mb-1">GROUP_DETECTION</p>
-              <h2 className="font-display text-3xl uppercase text-paper leading-none">{pendingSelection.guestName}</h2>
-              <p className="font-mono text-xs text-paper/40 mt-1">REMAINING: {pendingSelection.remaining} OF {pendingSelection.partySize}</p>
+              <p className="font-mono text-[10px] uppercase text-[#C84630] tracking-[0.2em] mb-1">GROUP DETECTION</p>
+              <h2 className="font-display text-2xl uppercase font-medium leading-none">{pendingSelection.guestName}</h2>
+              <p className="font-mono text-[10px] text-[#9B9689] mt-1">REMAINING: {pendingSelection.remaining} OF {pendingSelection.partySize}</p>
             </header>
 
             <div className="grid grid-cols-4 gap-2">
@@ -212,12 +212,12 @@ export default function ScannerClient({
                   onClick={() => setSelectedCount(num)}
                   disabled={num > pendingSelection.remaining}
                   className={cn(
-                    "h-14 font-display text-2xl border-2 transition-none flex items-center justify-center",
+                    "h-14 font-display text-xl font-medium border transition-colors flex items-center justify-center",
                     selectedCount === num 
-                      ? "bg-signal border-signal text-void" 
+                      ? "bg-[#C84630] border-[#C84630] text-white" 
                       : num > pendingSelection.remaining
-                        ? "bg-ink border-ink text-paper/10"
-                        : "bg-transparent border-ink text-paper hover:border-signal/50"
+                        ? "bg-[#252220] border-[#252220] text-[#3A3733]"
+                        : "bg-transparent border-[#2F2C28] text-[#E8E4DC] hover:border-[#C84630]/50"
                   )}
                 >
                   {num}
@@ -227,7 +227,7 @@ export default function ScannerClient({
 
             <Button 
               variant="signal" 
-              className="w-full h-16 text-2xl mt-2"
+              className="w-full h-14 text-base mt-2"
               onClick={() => confirmAdmission(pendingSelection.invitationId, selectedCount)}
             >
               ADMIT {selectedCount} GUESTS
@@ -237,27 +237,27 @@ export default function ScannerClient({
       )}
 
       {/* Status Panel Flood */}
-      <footer className="shrink-0 min-h-[140px] flex items-stretch border-t-2 border-ink">
+      <footer className="shrink-0 min-h-[130px] flex items-stretch border-t border-[#2F2C28]">
         {processing ? (
-          <div className="w-full bg-ink flex items-center justify-center animate-pulse">
-            <h2 className="font-display text-4xl text-paper/40 tracking-widest uppercase">PROCESSING...</h2>
+          <div className="w-full bg-[#252220] flex items-center justify-center animate-pulse">
+            <h2 className="font-display text-2xl text-[#9B9689] tracking-widest uppercase font-medium">PROCESSING...</h2>
           </div>
         ) : result ? (
           <div className={cn(
             "w-full flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-75",
             result.status === 'success' ? "bg-admitted" : 
-            result.status === 'duplicate' ? "bg-signal" : "bg-denied"
+            result.status === 'duplicate' ? "bg-[#252220] border-t border-[#C84630]" : "bg-denied"
           )}>
             <h2 className={cn(
-              "font-display text-5xl uppercase leading-none tracking-tight",
-              result.status === 'error' ? "text-paper" : "text-void"
+              "font-display text-3xl uppercase leading-none tracking-tight font-medium",
+              result.status === 'error' ? "text-white" : "text-white"
             )}>
               {result.status === 'success' ? 'ADMITTED' : 
                result.status === 'duplicate' ? 'ALREADY ENTERED' : 'DENIED'}
             </h2>
             <p className={cn(
-              "font-mono text-sm uppercase mt-2 font-bold tracking-tight",
-              result.status === 'error' ? "text-paper/80" : "text-void/60"
+              "font-mono text-xs uppercase mt-2 font-medium tracking-wide",
+              result.status === 'error' ? "text-white/80" : "text-white/60"
             )}>
               {result.status === 'success' ? result.guestName : 
                result.status === 'duplicate' ? `ENTRY_TIME: ${new Date(result.enteredAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 
@@ -265,8 +265,8 @@ export default function ScannerClient({
             </p>
           </div>
         ) : (
-          <div className="w-full bg-ink flex items-center justify-center">
-            <h2 className="font-display text-4xl text-paper/20 tracking-widest uppercase">READY TO SCAN</h2>
+          <div className="w-full bg-[#252220] flex items-center justify-center">
+            <h2 className="font-display text-2xl text-[#3A3733] tracking-widest uppercase font-medium">READY TO SCAN</h2>
           </div>
         )}
       </footer>

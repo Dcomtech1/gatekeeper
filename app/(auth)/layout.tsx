@@ -4,25 +4,19 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row">
       {/* Left brand panel — desktop only */}
-      <div className="hidden lg:flex lg:w-[45%] bg-secondary border-r-2 border-signal/20 flex-col justify-between p-12 relative overflow-hidden">
-        {/* Background watermark */}
-        <div className="absolute inset-0 flex flex-wrap gap-8 p-8 rotate-[-20deg] scale-150 opacity-[0.03] pointer-events-none">
-          {Array(60).fill(0).map((_, i) => (
-            <span key={i} className="font-display text-3xl whitespace-nowrap text-foreground">GATEKEEP</span>
-          ))}
-        </div>
+      <div className="hidden lg:flex lg:w-[45%] bg-secondary flex-col justify-between p-12 relative overflow-hidden">
+        {/* Crenelle pattern at top */}
+        <div className="absolute top-0 left-0 right-0 crenelle-divider" />
 
-        <Link href="/" className="relative z-10">
-          <div className="font-display text-5xl tracking-[0.3em] uppercase text-foreground">GATEKEEP</div>
+        <Link href="/" className="relative z-10 mt-4">
+          <div className="font-display text-xl font-medium tracking-[0.2em] uppercase text-foreground">Crenelle</div>
         </Link>
 
-        <div className="relative z-10 flex flex-col gap-6">
-          <div className="border-l-4 border-signal pl-6">
-            <p className="font-display text-4xl uppercase text-foreground leading-tight">
-              Every seat<br />accounted for.
-            </p>
-          </div>
-          <p className="font-mono text-sm text-foreground/40 uppercase tracking-widest">
+        <div className="relative z-10 flex flex-col gap-4">
+          <h2 className="font-display text-4xl uppercase font-medium tracking-tight text-foreground leading-[0.95]">
+            Every seat<br />accounted for.
+          </h2>
+          <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.2em]">
             QR-CODED ENTRY — REAL-TIME SCANNING — FULL CONTROL
           </p>
         </div>
@@ -32,7 +26,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-16 bg-background">
         {/* Mobile wordmark */}
         <Link href="/" className="lg:hidden mb-10">
-          <div className="font-display text-4xl tracking-[0.3em] uppercase text-foreground">GATEKEEP</div>
+          <div className="font-display text-lg font-medium tracking-[0.2em] uppercase text-foreground">Crenelle</div>
         </Link>
 
         <div className="w-full max-w-md">

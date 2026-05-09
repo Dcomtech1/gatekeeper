@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import { Bebas_Neue, DM_Mono } from 'next/font/google'
+import { Space_Grotesk, DM_Mono } from 'next/font/google'
 
-const bebasNeue = Bebas_Neue({ 
-  weight: '400', 
+const spaceGrotesk = Space_Grotesk({ 
+  weight: ['300', '400', '500', '600', '700'], 
   subsets: ['latin'],
   variable: '--font-display'
 })
@@ -14,13 +14,14 @@ const dmMono = DM_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Event Registration — GateKeep',
+  title: 'Event Registration — Crenelle',
   description: 'Register for an upcoming event.',
 }
 
 export default function RegisterLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`${bebasNeue.variable} ${dmMono.variable} min-h-screen bg-background`}>
+    <div className={`${spaceGrotesk.variable} ${dmMono.variable} min-h-screen bg-background`}
+      style={{ fontFamily: 'var(--font-display)' }}>
       {children}
     </div>
   )

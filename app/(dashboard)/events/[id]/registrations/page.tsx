@@ -129,7 +129,7 @@ export default function RegistrationsPage() {
 
   const statusBadge = (status: string) => {
     const cls: Record<string, string> = {
-      pending: 'bg-signal/20 text-signal border-signal/30',
+      pending: 'bg-foreground/5 text-foreground/60 border-foreground/10',
       accepted: 'bg-admitted/20 text-admitted border-admitted/30',
       rejected: 'bg-denied/20 text-denied border-denied/30',
     }

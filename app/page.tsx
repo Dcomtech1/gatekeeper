@@ -2,200 +2,230 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { QrCode, Zap, BarChart3, ShieldCheck, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const useCases = [
-    "WEDDINGS", "CONFERENCES", "CHURCH PROGRAMS", "BIRTHDAY PARTIES", 
-    "GALAS", "PRIVATE DINNERS", "CONCERTS", "FESTIVALS", "WORKSHOPS"
-  ]
-
   return (
-    <div className="bg-background min-h-screen text-foreground overflow-x-hidden font-mono selection:bg-signal selection:text-void">
-      {/* Background Texture: Repeating Diagonal "GATEKEEP" */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-[0.04]">
-        <div className="absolute inset-0 flex flex-wrap gap-x-12 gap-y-8 p-10 rotate-[-15deg] scale-150">
-          {Array(200).fill(0).map((_, i) => (
-            <span key={i} className="font-display text-4xl whitespace-nowrap">GATEKEEP</span>
-          ))}
-        </div>
-      </div>
+    <div className="bg-background min-h-screen text-foreground overflow-x-hidden">
 
-      {/* Top Nav */}
-      <nav className="relative z-10 border-b-2 border-foreground/20 flex items-center justify-between px-6 py-6 md:px-12 bg-background/80 backdrop-blur-sm">
-        <div className="font-display text-4xl tracking-[0.3em] uppercase">GATEKEEP</div>
-        <div className="flex gap-4 items-center">
+      {/* ═══ Nav ═══ */}
+      <nav className="flex items-center justify-between px-6 py-5 md:px-12 border-b border-border">
+        <div className="font-display text-lg font-medium tracking-[0.2em] uppercase">Crenelle</div>
+        <div className="flex gap-3 items-center">
           {user ? (
             <Link href="/events">
-              <Button variant="signal" size="lg">DASHBOARD</Button>
+              <Button variant="signal" size="sm">DASHBOARD</Button>
             </Link>
           ) : (
             <>
               <Link href="/login">
-                <Button variant="ghost" className="hidden md:flex">LOG IN</Button>
+                <Button variant="ghost" size="sm" className="hidden md:flex">LOG IN</Button>
               </Link>
               <Link href="/login">
-                <Button variant="signal" size="lg">GET STARTED</Button>
+                <Button variant="signal" size="sm">GET STARTED</Button>
               </Link>
             </>
           )}
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative z-10 min-h-[90vh] flex flex-col justify-center px-6 md:px-12 py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          <div className="flex flex-col items-start">
-            <h1 className="font-display uppercase leading-[0.85] tracking-tighter flex flex-col">
-              <span className="text-[clamp(80px,15vw,160px)] text-foreground">NO</span>
-              <span className="text-[clamp(80px,15vw,160px)] text-signal">UNINVITED</span>
-              <span className="text-[clamp(80px,15vw,160px)] text-foreground">GUESTS.</span>
+
+      {/* ═══ Hero ═══ */}
+      <section className="px-6 md:px-12 pt-16 pb-20 md:pt-24 md:pb-28 relative">
+        {/* Subtle grid texture — architectural reference */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
+          style={{
+            backgroundImage: `
+              linear-gradient(var(--foreground) 1px, transparent 1px),
+              linear-gradient(90deg, var(--foreground) 1px, transparent 1px)
+            `,
+            backgroundSize: '80px 80px',
+          }}
+        />
+
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-8 items-end relative z-10">
+          
+          {/* Headline — takes 7 cols */}
+          <div className="lg:col-span-7 flex flex-col">
+            <h1 className="font-display font-medium uppercase leading-[0.88] tracking-tight">
+              <span className="block text-[clamp(64px,12vw,140px)] text-foreground">No</span>
+              <span className="block text-[clamp(64px,12vw,140px)] text-accent">Uninvited</span>
+              <span className="block text-[clamp(64px,12vw,140px)] text-foreground">Guests.</span>
             </h1>
             
-            <p className="mt-8 text-foreground/90 text-lg md:text-xl max-w-120 leading-tight">
-              QR-coded entry cards. Real-time scanning. <br/>
-              Full control over your door.
-            </p>
-
-            <Link href="/login" className="mt-12">
-              <Button variant="signal" size="lg" className="h-16 px-10 text-2xl">
-                CREATE YOUR EVENT →
-              </Button>
-            </Link>
+            <div className="mt-10 flex flex-col gap-6 max-w-md">
+              <p className="text-muted-foreground text-base leading-relaxed">
+                QR-coded entry cards. Real-time scanning. 
+                Full control over who walks through your door.
+              </p>
+              <Link href="/login">
+                <Button variant="signal" size="lg" className="w-fit group">
+                  CREATE YOUR EVENT
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </div>
           </div>
 
-          {/* Desktop Only: Mock Entry Card */}
-          <div className="hidden lg:flex justify-center items-center">
-            <div className="relative w-105 bg-background border-2 border-signal p-8 flex flex-col gap-6 shadow-[20px_20px_0px_0px_rgba(255,214,0,0.15)]">
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col">
-                  <span className="text-[10px] uppercase text-signal/80 mb-1">EVENT_ACCESS_PASS</span>
-                  <div className="font-display text-4xl uppercase text-foreground leading-none">UNDERGROUND_RAVE</div>
+          {/* Mock Entry Card — takes 5 cols */}
+          <div className="lg:col-span-5 hidden lg:block">
+            <div className="border border-border bg-card p-6 relative">
+              {/* Accent top bar */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-accent" />
+
+              <div className="flex justify-between items-start mb-5 pt-2">
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground mb-1">Event Access Pass</p>
+                  <h3 className="font-display text-2xl uppercase font-medium tracking-tight text-foreground">Underground Rave</h3>
                 </div>
-                <div className="bg-signal text-void font-display text-xl px-2">LIVE</div>
+                <span className="font-mono text-[9px] uppercase tracking-widest bg-admitted text-white px-2 py-1">LIVE</span>
               </div>
 
-              <div className="border-t border-dashed border-signal/60 my-2" />
+              <div className="h-px bg-border my-4" />
 
               <div className="flex justify-between items-end">
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] uppercase text-signal/70">GUEST_IDENTITY</span>
-                    <span className="font-mono text-sm text-foreground">ALEX_HARRIS // G048</span>
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-muted-foreground">Guest</p>
+                    <p className="font-mono text-xs text-foreground">Alex Harris — G048</p>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] uppercase text-signal/70">VENUE_STATION</span>
-                    <span className="font-mono text-sm text-foreground">WAREHOUSE_B_LOND</span>
+                  <div>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-muted-foreground">Venue</p>
+                    <p className="font-mono text-xs text-foreground">Warehouse B, London</p>
                   </div>
                 </div>
-
-                {/* Fake QR Code Grid */}
-                <div className="grid grid-cols-8 w-24 h-24 bg-foreground/90 p-1 border-2 border-background shrink-0">
-                  {Array(64).fill(0).map((_, i) => (
-                    <div key={i} className={cn("w-full h-full", Math.random() > 0.4 ? "bg-background" : "bg-transparent")} />
-                  ))}
+                {/* QR placeholder */}
+                <div className="w-20 h-20 bg-foreground p-1 shrink-0">
+                  <div className="grid grid-cols-8 w-full h-full">
+                    {Array(64).fill(0).map((_, i) => (
+                      <div key={i} className={cn("w-full h-full", Math.random() > 0.4 ? "bg-background" : "bg-transparent")} />
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Red Stamp */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-15deg] border-4 border-denied text-denied font-display text-6xl px-6 py-2 uppercase opacity-80 pointer-events-none select-none">
-                ADMIT ONE
+              {/* Stamp */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-12deg] border-2 border-admitted text-admitted font-display text-4xl font-medium px-4 py-1 uppercase opacity-60 pointer-events-none select-none">
+                Admit One
               </div>
+
+              <div className="h-px bg-border mt-5 mb-2" />
+              <p className="font-mono text-[7px] uppercase tracking-[0.2em] text-muted-foreground">
+                CRENELLE_ACCESS // VERIFIED
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Section 2: How It Works */}
-      <section className="bg-foreground text-background py-24 md:py-32 px-6 md:px-12 border-y-4 border-foreground">
+
+      {/* ═══ Crenelle Divider ═══ */}
+      <div className="crenelle-divider" />
+
+
+      {/* ═══ How It Works ═══ */}
+      <section className="bg-secondary px-6 md:px-12 py-24 md:py-32">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-20">
-            <h2 className="font-display text-6xl md:text-8xl uppercase leading-none inline-block relative">
-              HOW IT WORKS
-              <div className="absolute -bottom-2 left-0 w-full h-1 md:h-2 bg-signal" />
+          <div className="flex items-center gap-4 mb-16">
+            <h2 className="font-display text-3xl md:text-4xl uppercase font-medium tracking-tight">
+              How It Works
             </h2>
+            <div className="h-px bg-accent flex-1 hidden md:block" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-14">
             {[
               { num: "01", title: "Create your event", desc: "Set the event name, date, venue, and total capacity in minutes." },
-              { num: "02", title: "Add your guest list", desc: "Enter each guest with their party size and seat assignment. GateKeep generates their unique QR card automatically." },
-              { num: "03", title: "Print & distribute cards", desc: "Download beautifully designed entry cards and print them. Hand-deliver or post them to your guests." },
+              { num: "02", title: "Add your guest list", desc: "Enter each guest with their party size and seat assignment. Crenelle generates their unique QR card automatically." },
+              { num: "03", title: "Print & distribute cards", desc: "Download designed entry cards and print them. Hand-deliver or post them to your guests." },
               { num: "04", title: "Scan at the gate", desc: "Share a scanner link with your ushers. They scan every card at the entrance — green means in, red means out." }
-            ].map((step, i) => (
-              <div key={step.num} className="flex flex-col gap-4">
-                <span className="font-display text-5xl text-signal">{step.num}</span>
-                <h3 className="font-display text-3xl uppercase leading-tight">{step.title}</h3>
-                <p className="font-mono text-sm leading-relaxed">{step.desc}</p>
+            ].map((step) => (
+              <div key={step.num} className="flex flex-col gap-3">
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="font-mono text-xs text-accent font-medium">{step.num}</span>
+                  <div className="h-px bg-border flex-1" />
+                </div>
+                <h3 className="font-display text-xl uppercase font-medium tracking-tight">{step.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Section 3: Features */}
-      <section className="py-24 md:py-32 px-6 md:px-12 bg-background relative overflow-hidden border-b-2 border-foreground/20">
+
+      {/* ═══ Crenelle Divider ═══ */}
+      <div className="crenelle-divider" />
+
+
+      {/* ═══ Features ═══ */}
+      <section className="px-6 md:px-12 py-24 md:py-32 bg-background">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h3 className="text-signal font-display text-2xl tracking-[0.2em] uppercase mb-4">FEATURES</h3>
-            <h2 className="font-display text-5xl md:text-8xl uppercase leading-none mb-8">Everything you need at the gate</h2>
-            <p className="font-mono text-foreground/70 max-w-2xl mx-auto text-lg md:text-xl leading-tight">
-              Built specifically for the challenges of Nigerian events — and any event where access control matters.
-            </p>
+          <div className="mb-16 max-w-xl">
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-accent mb-3">Features</p>
+            <h2 className="font-display text-4xl md:text-5xl uppercase font-medium tracking-tight leading-[0.95]">
+              Everything you need at the gate
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {[
               {
-                icon: <QrCode className="w-10 h-10" />,
+                num: "01",
                 title: "Personalised QR Entry Cards",
                 desc: "Every guest gets a unique QR code tied to their name, party size, and seat. Printed and handed out before the event."
               },
               {
-                icon: <Zap className="w-10 h-10" />,
+                num: "02",
                 title: "Instant Gate Scanning",
                 desc: "Ushers scan cards using their phone browser — no app download, no login. Entry confirmed in under two seconds."
               },
               {
-                icon: <BarChart3 className="w-10 h-10" />,
+                num: "03",
                 title: "Live Attendance Dashboard",
                 desc: "Watch arrivals in real time from any device. See who's in, who's pending, and your live headcount — all updating instantly."
               },
               {
-                icon: <ShieldCheck className="w-10 h-10" />,
+                num: "04",
                 title: "Zero Uninvited Guests",
                 desc: "Every QR code works exactly once. Duplicates are flagged immediately. No valid card means no entry — no exceptions."
               }
-            ].map((feature, i) => (
-              <div key={i} className="group p-8 border-2 border-foreground/10 bg-secondary/30 hover:border-signal transition-colors flex flex-col gap-6 relative">
-                <div className="text-signal group-hover:scale-110 transition-transform duration-300">
-                  {feature.icon}
+            ].map((feature) => (
+              <div key={feature.num} className="bg-card border border-border p-8 md:p-10 flex flex-col gap-4 group hover:border-accent/40 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] text-accent tracking-widest">{feature.num}</span>
+                  <div className="w-8 h-0.5 bg-accent/30 group-hover:w-12 group-hover:bg-accent transition-all duration-300" />
                 </div>
-                <h3 className="font-display text-3xl uppercase leading-tight">{feature.title}</h3>
-                <p className="font-mono text-sm text-foreground/80 leading-relaxed">{feature.desc}</p>
-                <div className="absolute top-4 right-4 text-[10px] font-mono text-foreground/20 group-hover:text-signal/40">
-                  REF_{i+1}
-                </div>
+                <h3 className="font-display text-xl md:text-2xl uppercase font-medium tracking-tight">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Section 4: Use Cases Ticker */}
-      <section className="py-24 bg-background border-b-2 border-foreground/20">
-        <h2 className="px-6 md:px-12 font-display text-4xl uppercase text-foreground mb-10 tracking-widest text-center md:text-left">BUILT FOR</h2>
+
+      {/* ═══ Crenelle Divider ═══ */}
+      <div className="crenelle-divider-subtle" />
+
+
+      {/* ═══ Built For ═══ */}
+      <section className="py-20 bg-background overflow-hidden">
+        <h2 className="px-6 md:px-12 font-display text-xl uppercase font-medium tracking-tight text-muted-foreground mb-10">
+          Built For
+        </h2>
         
-        <div className="border-y-2 border-foreground/40 py-8 bg-secondary/10 overflow-hidden flex">
+        <div className="border-y border-border py-8 overflow-hidden flex">
           <div className="animate-marquee flex items-center">
             {Array(2).fill(0).map((_, i) => (
               <div key={i} className="flex items-center">
-                {useCases.map((useCase) => (
-                  <span key={useCase} className="font-display text-6xl md:text-8xl text-signal mx-8 whitespace-nowrap">
-                    {useCase} ·
+                {["WEDDINGS", "CONFERENCES", "CHURCH PROGRAMS", "BIRTHDAY PARTIES", "GALAS", "PRIVATE DINNERS", "CONCERTS", "FESTIVALS", "WORKSHOPS"].map((useCase) => (
+                  <span key={useCase} className="font-display text-4xl md:text-6xl text-foreground/10 mx-6 whitespace-nowrap uppercase font-medium">
+                    {useCase}
+                    <span className="text-accent/40 mx-6">·</span>
                   </span>
                 ))}
               </div>
@@ -204,54 +234,59 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Section 5: CTA */}
-      <section className="py-32 px-6 md:px-12 bg-void border-b-4 border-signal text-center relative overflow-hidden">
-        {/* Background Noise/Pattern */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-        
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <h2 className="font-display text-6xl md:text-9xl uppercase leading-none mb-8 tracking-tighter">
-            Ready to take <br/> control of your event?
+
+      {/* ═══ CTA — always dark for contrast ═══ */}
+      <section className="px-6 md:px-12 py-28 md:py-36 bg-[#141210] text-[#E8E4DC] relative">
+        {/* Crenelle pattern at top */}
+        <div className="absolute top-0 left-0 right-0 h-6px">
+          <div className="w-full h-[6px]" style={{
+            background: `
+              repeating-linear-gradient(90deg, #C84630 0 8px, transparent 8px 14px) top / 100% 4px no-repeat,
+              linear-gradient(#C84630, #C84630) bottom / 100% 2px no-repeat
+            `
+          }} />
+        </div>
+
+        <div className="max-w-3xl mx-auto text-center relative z-10">
+          <h2 className="font-display text-4xl md:text-6xl lg:text-7xl uppercase font-medium tracking-tight leading-[0.95] mb-6">
+            Ready to take control of your event?
           </h2>
-          <p className="font-mono text-xl md:text-2xl text-signal/90 mb-12 uppercase tracking-wide">
+          <p className="text-[#9B9689] text-base md:text-lg mb-10 max-w-md mx-auto">
             Set up in minutes. No technical knowledge required.
           </p>
           <Link href="/login">
-            <Button variant="signal" size="lg" className="h-20 px-12 text-3xl group">
-              CREATE FREE ACCOUNT 
-              <ArrowRight className="ml-4 w-8 h-8 group-hover:translate-x-2 transition-transform" />
+            <Button variant="signal" size="lg" className="group">
+              CREATE FREE ACCOUNT
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
         </div>
-
-        {/* Decorative elements */}
-        <div className="absolute -bottom-10 -left-10 w-40 h-40 border-4 border-signal/20 rotate-45" />
-        <div className="absolute -top-10 -right-10 w-40 h-40 border-4 border-signal/20 -rotate-12" />
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-6 md:px-12 bg-background border-t-2 border-foreground/10">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8 max-w-7xl mx-auto">
-          <div className="flex flex-col items-center md:items-start gap-2">
-            <div className="font-display text-4xl tracking-[0.3em] uppercase text-foreground">GATEKEEP</div>
-            <p className="font-mono text-[10px] text-foreground/50 uppercase tracking-[0.2em]">
-              © 2026 GATEKEEP. BUILT FOR EVENTS THAT MATTER.
+
+      {/* ═══ Footer ═══ */}
+      <footer className="px-6 md:px-12 py-10 bg-background border-t border-border">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 max-w-7xl mx-auto">
+          <div className="flex flex-col items-center md:items-start gap-1">
+            <div className="font-display text-base font-medium tracking-[0.2em] uppercase">Crenelle</div>
+            <p className="font-mono text-[9px] text-muted-foreground uppercase tracking-[0.2em]">
+              © 2026 CRENELLE. BUILT FOR EVENTS THAT MATTER.
             </p>
           </div>
           
-          <div className="flex gap-12">
-            <div className="flex flex-col gap-2">
-              <span className="font-display text-xs text-signal tracking-widest uppercase">Navigation</span>
-              <div className="flex flex-col gap-1 font-mono text-sm uppercase">
-                <Link href="/login" className="hover:text-signal transition-colors">Login</Link>
-                <Link href="/login" className="hover:text-signal transition-colors">Register</Link>
+          <div className="flex gap-10">
+            <div className="flex flex-col gap-1.5">
+              <span className="font-mono text-[9px] text-accent tracking-widest uppercase">Navigation</span>
+              <div className="flex flex-col gap-1 text-xs uppercase text-muted-foreground">
+                <Link href="/login" className="hover:text-foreground transition-colors">Login</Link>
+                <Link href="/login" className="hover:text-foreground transition-colors">Register</Link>
               </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <span className="font-display text-xs text-signal tracking-widest uppercase">Social</span>
-              <div className="flex flex-col gap-1 font-mono text-sm uppercase">
-                <a href="#" className="hover:text-signal transition-colors">Twitter</a>
-                <a href="#" className="hover:text-signal transition-colors">Instagram</a>
+            <div className="flex flex-col gap-1.5">
+              <span className="font-mono text-[9px] text-accent tracking-widest uppercase">Social</span>
+              <div className="flex flex-col gap-1 text-xs uppercase text-muted-foreground">
+                <a href="#" className="hover:text-foreground transition-colors">Twitter</a>
+                <a href="#" className="hover:text-foreground transition-colors">Instagram</a>
               </div>
             </div>
           </div>
@@ -260,4 +295,3 @@ export default async function HomePage() {
     </div>
   )
 }
-

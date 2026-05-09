@@ -93,3 +93,19 @@ export async function deleteEvent(id: string) {
   revalidatePath('/events')
   redirect('/events')
 }
+
+export async function updateEventStatus(id: string, status: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('events')
+    .update({ status: status.toLowerCase() })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/events')
+  revalidatePath(`/events/${id}`)
+  return { success: true }
+}
+

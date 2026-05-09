@@ -10,7 +10,7 @@ function getResend() {
 }
 
 // The "from" address — must be verified in Resend dashboard
-const FROM_EMAIL = process.env.EMAIL_FROM || 'GateKeep <onboarding@resend.dev>'
+const FROM_EMAIL = process.env.EMAIL_FROM || 'Crenelle <onboarding@resend.dev>'
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
@@ -59,25 +59,25 @@ async function handleInvitation({
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin:0;padding:0;background-color:#0A0A0A;font-family:'Courier New',monospace;">
+<body style="margin:0;padding:0;background-color:#141210;font-family:'Courier New',monospace;">
   <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
     
     <!-- Header -->
-    <div style="border:2px solid #F0EDE8;padding:30px;margin-bottom:0;">
-      <p style="font-size:10px;letter-spacing:3px;color:#FFD600;margin:0 0 8px 0;text-transform:uppercase;">
+    <div style="border:1px solid #2F2C28;padding:30px;margin-bottom:0;">
+      <p style="font-size:10px;letter-spacing:3px;color:#C84630;margin:0 0 8px 0;text-transform:uppercase;">
         YOU'RE IN — INVITATION CONFIRMED
       </p>
-      <h1 style="font-size:36px;color:#F0EDE8;margin:0;text-transform:uppercase;letter-spacing:-1px;">
+      <h1 style="font-size:36px;color:#E8E4DC;margin:0;text-transform:uppercase;letter-spacing:-1px;">
         ${event.name}
       </h1>
     </div>
 
     <!-- Event Details -->
-    <div style="border:2px solid #F0EDE8;border-top:none;padding:24px 30px;">
+    <div style="border:1px solid #2F2C28;border-top:none;padding:24px 30px;">
       <table style="width:100%;border-collapse:collapse;">
         <tr>
-          <td style="padding:8px 0;font-size:10px;letter-spacing:2px;color:rgba(240,237,232,0.6);text-transform:uppercase;width:100px;">DATE</td>
-          <td style="padding:8px 0;font-size:14px;color:#F0EDE8;">${eventDate}</td>
+          <td style="padding:8px 0;font-size:10px;letter-spacing:2px;color:#9B9689;text-transform:uppercase;width:100px;">DATE</td>
+          <td style="padding:8px 0;font-size:14px;color:#E8E4DC;">${eventDate}</td>
         </tr>
         ${event.time ? `
         <tr>
@@ -94,28 +94,28 @@ async function handleInvitation({
         </tr>
         <tr>
           <td style="padding:8px 0;font-size:10px;letter-spacing:2px;color:rgba(240,237,232,0.6);text-transform:uppercase;">ADMITS</td>
-          <td style="padding:8px 0;font-size:14px;color:#FFD600;font-weight:bold;">1 PERSON</td>
+          <td style="padding:8px 0;font-size:14px;color:#C84630;font-weight:bold;">1 PERSON</td>
         </tr>
       </table>
     </div>
 
     <!-- QR Code -->
-    <div style="border:2px solid #F0EDE8;border-top:none;padding:30px;text-align:center;">
-      <p style="font-size:10px;letter-spacing:3px;color:rgba(240,237,232,0.6);margin:0 0 16px 0;text-transform:uppercase;">
+    <div style="border:1px solid #2F2C28;border-top:none;padding:30px;text-align:center;">
+      <p style="font-size:10px;letter-spacing:3px;color:#9B9689;margin:0 0 16px 0;text-transform:uppercase;">
         YOUR ENTRY PASS — SCAN AT THE GATE
       </p>
-      <div style="display:inline-block;border:2px solid rgba(240,237,232,0.3);padding:8px;background:#F0EDE8;">
+      <div style="display:inline-block;border:1px solid #2F2C28;padding:8px;background:#E8E4DC;">
         <img src="${qrUrl}" alt="Entry QR Code" width="200" height="200" style="display:block;" />
       </div>
-      <p style="font-size:10px;letter-spacing:2px;color:rgba(240,237,232,0.4);margin:16px 0 0 0;text-transform:uppercase;">
+      <p style="font-size:10px;letter-spacing:2px;color:#6B6660;margin:16px 0 0 0;text-transform:uppercase;">
         This QR code is unique to you. Do not share it.
       </p>
     </div>
 
     <!-- Footer -->
     <div style="padding:20px 0;text-align:center;">
-      <p style="font-size:8px;letter-spacing:3px;color:rgba(240,237,232,0.3);margin:0;text-transform:uppercase;">
-        GATEKEEP_ENTRY_SYSTEM // VERIFIED_INVITATION
+      <p style="font-size:8px;letter-spacing:3px;color:#6B6660;margin:0;text-transform:uppercase;">
+        CRENELLE_ACCESS // INVITATION_VERIFIED
       </p>
     </div>
   </div>
@@ -185,31 +185,31 @@ async function handleReminder({
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin:0;padding:0;background-color:#0A0A0A;font-family:'Courier New',monospace;">
+<body style="margin:0;padding:0;background-color:#141210;font-family:'Courier New',monospace;">
   <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
     
     <!-- Header -->
-    <div style="border:2px solid #F0EDE8;padding:30px;margin-bottom:0;">
-      <p style="font-size:10px;letter-spacing:3px;color:#FFD600;margin:0 0 8px 0;text-transform:uppercase;">
+    <div style="border:1px solid #2F2C28;padding:30px;margin-bottom:0;">
+      <p style="font-size:10px;letter-spacing:3px;color:#C84630;margin:0 0 8px 0;text-transform:uppercase;">
         EVENT REMINDER
       </p>
-      <h1 style="font-size:36px;color:#F0EDE8;margin:0;text-transform:uppercase;letter-spacing:-1px;">
+      <h1 style="font-size:36px;color:#E8E4DC;margin:0;text-transform:uppercase;letter-spacing:-1px;">
         ${event.name}
       </h1>
     </div>
 
     <!-- Custom message -->
     ${customMessage ? `
-    <div style="border:2px solid #F0EDE8;border-top:none;padding:24px 30px;">
-      <p style="font-size:14px;color:#F0EDE8;line-height:1.6;margin:0;white-space:pre-wrap;">${customMessage}</p>
+    <div style="border:1px solid #2F2C28;border-top:none;padding:24px 30px;">
+      <p style="font-size:14px;color:#E8E4DC;line-height:1.6;margin:0;white-space:pre-wrap;">${customMessage}</p>
     </div>` : ''}
 
     <!-- Event Details -->
-    <div style="border:2px solid #F0EDE8;border-top:none;padding:24px 30px;">
+    <div style="border:1px solid #2F2C28;border-top:none;padding:24px 30px;">
       <table style="width:100%;border-collapse:collapse;">
         <tr>
           <td style="padding:8px 0;font-size:10px;letter-spacing:2px;color:rgba(240,237,232,0.6);text-transform:uppercase;width:100px;">DATE</td>
-          <td style="padding:8px 0;font-size:14px;color:#F0EDE8;">${eventDate}</td>
+          <td style="padding:8px 0;font-size:14px;color:#E8E4DC;">${eventDate}</td>
         </tr>
         ${event.time ? `
         <tr>
@@ -224,19 +224,19 @@ async function handleReminder({
     </div>
 
     <!-- QR Code -->
-    <div style="border:2px solid #F0EDE8;border-top:none;padding:30px;text-align:center;">
-      <p style="font-size:10px;letter-spacing:3px;color:rgba(240,237,232,0.6);margin:0 0 16px 0;text-transform:uppercase;">
+    <div style="border:1px solid #2F2C28;border-top:none;padding:30px;text-align:center;">
+      <p style="font-size:10px;letter-spacing:3px;color:#9B9689;margin:0 0 16px 0;text-transform:uppercase;">
         YOUR ENTRY PASS
       </p>
-      <div style="display:inline-block;border:2px solid rgba(240,237,232,0.3);padding:8px;background:#F0EDE8;">
+      <div style="display:inline-block;border:1px solid #2F2C28;padding:8px;background:#E8E4DC;">
         <img src="${qrUrl}" alt="Entry QR Code" width="200" height="200" style="display:block;" />
       </div>
     </div>
 
     <!-- Footer -->
     <div style="padding:20px 0;text-align:center;">
-      <p style="font-size:8px;letter-spacing:3px;color:rgba(240,237,232,0.3);margin:0;text-transform:uppercase;">
-        GATEKEEP_ENTRY_SYSTEM // EVENT_REMINDER
+      <p style="font-size:8px;letter-spacing:3px;color:#6B6660;margin:0;text-transform:uppercase;">
+        CRENELLE_ACCESS // REMINDER
       </p>
     </div>
   </div>

@@ -131,7 +131,7 @@ export default function EventOverviewPage() {
     return (
       <div className="max-w-2xl">
         <div className="mb-8">
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal mb-2">EDITING_EVENT</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-foreground/40 mb-2">EDITING_EVENT</p>
           <h2 className="font-display text-4xl uppercase text-foreground leading-none">Edit Details</h2>
         </div>
 
@@ -155,7 +155,7 @@ export default function EventOverviewPage() {
                     : 'border-foreground/20 text-foreground/60 hover:border-foreground/40'
                 }`}
               >
-                <Lock className={`h-4 w-4 shrink-0 ${editEventType === 'closed' ? 'text-signal' : ''}`} />
+                <Lock className={`h-4 w-4 shrink-0 ${editEventType === 'closed' ? 'text-accent' : ''}`} />
                 <span className="font-display text-lg uppercase leading-none">Closed</span>
               </button>
               <button
@@ -167,7 +167,7 @@ export default function EventOverviewPage() {
                     : 'border-foreground/20 text-foreground/60 hover:border-foreground/40'
                 }`}
               >
-                <Globe className={`h-4 w-4 shrink-0 ${editEventType === 'open' ? 'text-signal' : ''}`} />
+                <Globe className={`h-4 w-4 shrink-0 ${editEventType === 'open' ? 'text-accent' : ''}`} />
                 <span className="font-display text-lg uppercase leading-none">Open</span>
               </button>
             </div>
@@ -304,8 +304,8 @@ export default function EventOverviewPage() {
             label="EVENT_TYPE"
             value={
               <span className="inline-flex items-center gap-2">
-                {event.event_type === 'open' ? <Globe className="h-4 w-4 text-signal" /> : <Lock className="h-4 w-4 text-foreground/60" />}
-                <span className={`font-display text-lg uppercase ${event.event_type === 'open' ? 'text-signal' : ''}`}>
+                {event.event_type === 'open' ? <Globe className="h-4 w-4 text-accent" /> : <Lock className="h-4 w-4 text-foreground/60" />}
+                <span className={`font-display text-lg uppercase ${event.event_type === 'open' ? 'text-accent' : ''}`}>
                   {event.event_type}
                 </span>
               </span>
@@ -334,7 +334,7 @@ export default function EventOverviewPage() {
       {event.event_type === 'open' && event.registration_slug && (
         <div className="brutalist-card">
           <div className="flex items-center justify-between mb-4 pb-4 border-b-2 border-foreground/10">
-            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal">REGISTRATION_LINK</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-foreground/40">REGISTRATION_LINK</p>
             <Button
               variant="ghost"
               size="sm"

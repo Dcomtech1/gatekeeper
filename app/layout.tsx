@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import { Bebas_Neue, DM_Mono } from 'next/font/google'
+import { Space_Grotesk, DM_Mono } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
-const bebasNeue = Bebas_Neue({ 
-  weight: '400', 
+const spaceGrotesk = Space_Grotesk({ 
+  weight: ['300', '400', '500', '600', '700'], 
   subsets: ['latin'],
   variable: '--font-display'
 })
@@ -17,14 +17,15 @@ const dmMono = DM_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'GateKeep — Event Access Management',
+  title: 'Crenelle — Event Access Management',
   description: 'Control who enters your event. Every seat accounted for.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${bebasNeue.variable} ${dmMono.variable} antialiased font-mono`}>
+      <body className={`${spaceGrotesk.variable} ${dmMono.variable} antialiased`}
+        style={{ fontFamily: 'var(--font-display)' }}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

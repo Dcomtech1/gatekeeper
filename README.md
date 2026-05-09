@@ -1,8 +1,8 @@
-# GateKeep — Event Access Management
+# Crenelle — Event Access Management
 
 > Every seat accounted for. Every event under control.
 
-GateKeep is a web application that solves the problem of uninvited guests at events by issuing QR-coded entry cards that are scanned at the entrance. It works for any event type — weddings, conferences, birthday parties, church programs, and more.
+Crenelle is a web application that solves the problem of uninvited guests at events by issuing QR-coded entry cards that are scanned at the entrance. It works for any event type — weddings, conferences, birthday parties, church programs, and more.
 
 ---
 
@@ -63,7 +63,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ## Project Structure
 
 ```
-gatekeeper/
+crenelle/
 ├── app/
 │   ├── (auth)/              # Login + Signup pages
 │   ├── (dashboard)/         # Organizer portal (protected)

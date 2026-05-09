@@ -5,9 +5,10 @@ import Link from "next/link"
 import { Trash2 } from "lucide-react"
 import { EventCard } from "@/components/event-card"
 import { DeleteEventDialog } from "@/components/delete-event-dialog"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import { EmptyState } from "@/components/empty-state"
 import { Button } from "@/components/ui/button"
-import { deleteEvent } from "@/app/actions/events"
+import { deleteEvent, updateEventStatus } from "@/app/actions/events"
 import type { Event, Invitation } from "@/lib/types"
 
 // Hooks & Components
@@ -38,11 +39,18 @@ export function EventsDashboardClient({
 
   // 2. Interaction State
   const [deleteTarget, setDeleteTarget] = useState<Event | null>(null)
+  const [statusChangeTarget, setStatusChangeTarget] = useState<Event | null>(null)
   const [filter, setFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<"updated" | "created" | "name">("updated")
   const [search, setSearch] = useState("")
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  const getNextStatus = (current: string) => {
+    const sequence = ["draft", "published", "live", "ended"]
+    const currentIndex = sequence.indexOf(current)
+    return sequence[(currentIndex + 1) % sequence.length]
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -108,6 +116,7 @@ export function EventsDashboardClient({
                             event.status === "published" ? "PUBLISHED" : 
                             event.status === "ended" ? "CLOSED" : "DRAFT"
                           }
+                          onStatusClick={() => setStatusChangeTarget(event)}
                         />
                       </Link>
                       <button
@@ -116,9 +125,9 @@ export function EventsDashboardClient({
                           e.stopPropagation()
                           setDeleteTarget(event)
                         }}
-                        className="absolute top-3 right-3 z-10 size-9 flex items-center justify-center border-2 border-denied text-denied bg-background hover:bg-denied hover:text-paper transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
+                        className="absolute top-4 right-4 z-10 size-8 flex items-center justify-center border border-denied text-denied bg-background hover:bg-denied hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
                       >
-                        <Trash2 className="size-4" />
+                        <Trash2 className="size-3.5" />
                       </button>
                     </div>
                   )
@@ -135,6 +144,27 @@ export function EventsDashboardClient({
                 startTransition(async () => {
                   await deleteEvent(deleteTarget.id)
                   setDeleteTarget(null)
+                })
+              }}
+            />
+
+            <ConfirmDialog
+              open={!!statusChangeTarget}
+              onOpenChange={(open) => !open && setStatusChangeTarget(null)}
+              variant="accent"
+              title="CHANGE_STATUS"
+              description="UPDATE_EVENT_LIFECYCLE"
+              subject={statusChangeTarget?.name}
+              subjectLabel="TARGET_EVENT"
+              body={`Are you sure you want to transition this event from ${statusChangeTarget?.status?.toUpperCase()} to ${getNextStatus(statusChangeTarget?.status || "").toUpperCase()}? This will affect attendee access.`}
+              confirmLabel={`UPDATE_TO_${getNextStatus(statusChangeTarget?.status || "").toUpperCase()}`}
+              isPending={isPending}
+              onConfirm={() => {
+                if (!statusChangeTarget) return
+                const nextStatus = getNextStatus(statusChangeTarget.status)
+                startTransition(async () => {
+                  await updateEventStatus(statusChangeTarget.id, nextStatus)
+                  setStatusChangeTarget(null)
                 })
               }}
             />
